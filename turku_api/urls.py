@@ -8,5 +8,6 @@ urlpatterns = patterns('',
     # url(r'^$', 'turku_api.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
 
+    url(r'^v1/', include('api.urls', namespace="api")),
     url(r'^admin/', include(admin.site.urls)),
 )

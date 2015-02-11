@@ -8,6 +8,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns(
+    '',
     url(r'^$', RedirectView.as_view(url=reverse_lazy('admin:index'))),
     url(r'^v1/update_config$', views.update_config, name='update_config'),
     url(r'^v1/storage_ping_checkin$', views.storage_ping_checkin, name='storage_ping_checkin'),

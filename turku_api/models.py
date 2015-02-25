@@ -57,8 +57,11 @@ class Storage(models.Model):
     ssh_ping_host_keys = models.CharField(max_length=65536, default='[]', validators=[validate_json_string_list])
     ssh_ping_port = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(65535)])
     ssh_ping_user = models.CharField(max_length=200)
+    auth = models.ForeignKey(Auth)
     active = models.BooleanField(default=True)
-    date_added = models.DateTimeField(default=timezone.now)
+    date_registered = models.DateTimeField(default=timezone.now)
+    date_updated = models.DateTimeField(default=timezone.now)
+    date_checked_in = models.DateTimeField(blank=True, null=True)
 
     def __unicode__(self):
         return self.name
@@ -73,6 +76,7 @@ class Machine(models.Model):
     unit_name = models.CharField(max_length=200)
     comment = models.CharField(max_length=200, blank=True, null=True)
     ssh_public_key = models.CharField(max_length=2048)
+    auth = models.ForeignKey(Auth)
     storage = models.ForeignKey(Storage)
     active = models.BooleanField(default=True)
     date_registered = models.DateTimeField(default=timezone.now)
@@ -93,9 +97,10 @@ class Source(models.Model):
     password = models.CharField(max_length=200)
     exclude = models.CharField(max_length=2048, default='[]', validators=[validate_json_string_list])
     frequency = models.CharField(max_length=200, default='daily')
+    retention = models.CharField(max_length=200, default='last 5 days,earliest of month')
     shared_service = models.BooleanField(default=False)
-    snapshot = models.BooleanField(default=True)
-    inplace = models.BooleanField(default=False)
+    large_rotating_files = models.BooleanField(default=False)
+    large_modifying_files = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
     date_added = models.DateTimeField(default=timezone.now)
     date_updated = models.DateTimeField(default=timezone.now)
@@ -106,4 +111,4 @@ class Source(models.Model):
         unique_together = (('machine', 'name'),)
 
     def __unicode__(self):
-        return '%s %s' % (self.machine.unit_name, self.path)
+        return '%s %s (%s)' % (self.machine.unit_name, self.name, self.path)

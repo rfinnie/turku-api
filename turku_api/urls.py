@@ -13,5 +13,6 @@ urlpatterns = patterns(
     url(r'^v1/update_config$', views.update_config, name='update_config'),
     url(r'^v1/storage_ping_checkin$', views.storage_ping_checkin, name='storage_ping_checkin'),
     url(r'^v1/storage_ping_source_update$', views.storage_ping_source_update, name='storage_ping_source_update'),
+    url(r'^v1/storage_update_config$', views.storage_update_config, name='storage_update_config'),
     url(r'^admin/', include(admin.site.urls)),
 )

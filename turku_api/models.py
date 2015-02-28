@@ -102,6 +102,7 @@ class Source(models.Model):
     large_rotating_files = models.BooleanField(default=False)
     large_modifying_files = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
+    published = models.BooleanField(default=True)
     date_added = models.DateTimeField(default=timezone.now)
     date_updated = models.DateTimeField(default=timezone.now)
     date_last_backed_up = models.DateTimeField(blank=True, null=True)

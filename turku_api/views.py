@@ -197,7 +197,7 @@ class ViewV1():
         sources_in_db = []
         for s in m.source_set.all():
             if s.name not in req_sources:
-                s.active = False
+                s.published = False
                 s.save()
                 continue
             sources_in_db.append(s.name)
@@ -218,7 +218,7 @@ class ViewV1():
                     modified = True
 
             if modified:
-                s.active = True
+                s.published = True
                 s.date_updated = timezone.now()
                 try:
                     s.full_clean()
@@ -266,7 +266,7 @@ class ViewV1():
 
         scheduled_sources = []
         now = timezone.now()
-        for s in m.source_set.filter(date_next_backup__lte=now, active=True):
+        for s in m.source_set.filter(date_next_backup__lte=now, active=True, published=True):
             scheduled_sources.append({
                 'name': s.name,
                 'path': s.path,
@@ -297,7 +297,7 @@ class ViewV1():
         m = self._storage_get_machine()
 
         try:
-            s = m.source_set.get(name=self.req['source_name'], active=True)
+            s = m.source_set.get(name=self.req['source_name'], active=True, published=True)
         except Source.DoesNotExist:
             raise HttpResponseException(HttpResponseNotFound('Source not found'))
         if self.req['success']:

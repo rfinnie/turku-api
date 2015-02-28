@@ -61,7 +61,7 @@ class Auth(models.Model):
     date_added = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        unique_together = (('name', 'secret'),)
+        unique_together = (('secret', 'secret_type'),)
 
     def __unicode__(self):
         return self.name

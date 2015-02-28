@@ -1,7 +1,21 @@
 import os
-from database_settings import DATABASES
+
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-SECRET_KEY = 's+*j4$4pnqg_@(1z7%=e9a-cs$gn0np*^_)f1h$&*5xyz-hp34'
+try:
+    from database_settings import DATABASES
+except ImportError:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
+try:
+    from secret_settings import SECRET_KEY
+except ImportError:
+    import random, string
+    SECRET_KEY = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(30))
 DEBUG = True
 TEMPLATE_DEBUG = True
 ALLOWED_HOSTS = ['turku.canonical.com']

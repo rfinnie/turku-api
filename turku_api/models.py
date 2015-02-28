@@ -29,6 +29,24 @@ def validate_json_string_list(value):
             raise ValidationError('Must be a valid JSON string list')
 
 
+def validate_storage_auth(value):
+    try:
+        a = Auth.objects.get(id=value)
+    except Auth.DoesNotExist:
+        raise ValidationError('Auth %s does not exist' % value)
+    if a.secret_type != 'storage_reg':
+        raise ValidationError('Must be a Storage registration')
+
+
+def validate_machine_auth(value):
+    try:
+        a = Auth.objects.get(id=value)
+    except Auth.DoesNotExist:
+        raise ValidationError('Auth %s does not exist' % value)
+    if a.secret_type != 'machine_reg':
+        raise ValidationError('Must be a Machine registration')
+
+
 class Auth(models.Model):
     SECRET_TYPES = (
         ('machine_reg', 'Machine registration'),
@@ -46,11 +64,7 @@ class Auth(models.Model):
         unique_together = (('name', 'secret'),)
 
     def __unicode__(self):
-        try:
-            t = [v[1] for i, v in enumerate(self.SECRET_TYPES) if v[0] == self.secret_type][0]
-        except IndexError:
-            t = self.secret_type
-        return '%s %s' % (t, self.name)
+        return self.name
 
 
 class Storage(models.Model):
@@ -62,7 +76,7 @@ class Storage(models.Model):
     ssh_ping_host_keys = models.CharField(max_length=65536, default='[]', validators=[validate_json_string_list])
     ssh_ping_port = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(65535)])
     ssh_ping_user = models.CharField(max_length=200)
-    auth = models.ForeignKey(Auth)
+    auth = models.ForeignKey(Auth, validators=[validate_storage_auth])
     active = models.BooleanField(default=True)
     date_registered = models.DateTimeField(default=timezone.now)
     date_updated = models.DateTimeField(default=timezone.now)
@@ -81,7 +95,7 @@ class Machine(models.Model):
     unit_name = models.CharField(max_length=200)
     comment = models.CharField(max_length=200, blank=True, null=True)
     ssh_public_key = models.CharField(max_length=2048)
-    auth = models.ForeignKey(Auth)
+    auth = models.ForeignKey(Auth, validators=[validate_machine_auth])
     storage = models.ForeignKey(Storage)
     active = models.BooleanField(default=True)
     date_registered = models.DateTimeField(default=timezone.now)

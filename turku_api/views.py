@@ -8,6 +8,7 @@ from turku_api.models import Auth, Machine, Source, Storage
 import json
 import random
 from datetime import timedelta
+from django.contrib.auth import hashers
 
 
 def frequency_next_scheduled(frequency, base_time=None):
@@ -104,8 +105,10 @@ class ViewV1():
             if k not in self.req:
                 raise HttpResponseException(HttpResponseForbidden('Bad auth'))
         try:
-            self.storage = Storage.objects.get(name=self.req['name'], secret=self.req['secret'], active=True)
+            self.storage = Storage.objects.get(name=self.req['name'], active=True)
         except Storage.DoesNotExist:
+            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+        if not hashers.check_password(self.req['secret'], self.storage.secret_hash):
             raise HttpResponseException(HttpResponseForbidden('Bad auth'))
 
     def _storage_get_machine(self):
@@ -144,7 +147,7 @@ class ViewV1():
             modified = False
         except Machine.DoesNotExist:
             m = Machine(uuid=req_machine['uuid'])
-            m.secret = req_machine['secret']
+            m.secret_hash = hashers.make_password(req_machine['secret'])
             m.auth = a
             modified = True
 
@@ -163,7 +166,7 @@ class ViewV1():
 
         # If the machine existed before, it had a secret.  Make sure that
         # hasn't changed.
-        if m.secret != req_machine['secret']:
+        if not hashers.check_password(req_machine['secret'], m.secret_hash):
             raise HttpResponseException(HttpResponseForbidden('Bad secret for existing machine'))
 
         # If the registration secret changed, update it
@@ -330,13 +333,13 @@ class ViewV1():
             modified = False
         except Storage.DoesNotExist:
             self.storage = Storage(name=req_storage['name'])
-            self.storage.secret = req_storage['secret']
+            self.storage.secret_hash = hashers.make_password(req_storage['secret'])
             self.storage.auth = a
             modified = True
 
         # If the storage existed before, it had a secret.  Make sure that
         # hasn't changed.
-        if self.storage.secret != req_storage['secret']:
+        if not hashers.check_password(req_storage['secret'], self.storage.secret_hash):
             raise HttpResponseException(HttpResponseForbidden('Bad secret for existing storage'))
 
         # If the registration secret changed, update it

@@ -56,7 +56,7 @@ class Auth(models.Model):
 class Storage(models.Model):
     id = models.CharField(max_length=36, primary_key=True, default=new_uuid, editable=False)
     name = models.CharField(max_length=200, unique=True)
-    secret = models.CharField(max_length=200)
+    secret_hash = models.CharField(max_length=200)
     comment = models.CharField(max_length=200, blank=True, null=True)
     ssh_ping_host = models.CharField(max_length=200)
     ssh_ping_host_keys = models.CharField(max_length=65536, default='[]', validators=[validate_json_string_list])
@@ -75,7 +75,7 @@ class Storage(models.Model):
 class Machine(models.Model):
     id = models.CharField(max_length=36, primary_key=True, default=new_uuid, editable=False)
     uuid = models.CharField(max_length=36, unique=True, validators=[validate_uuid])
-    secret = models.CharField(max_length=200)
+    secret_hash = models.CharField(max_length=200)
     environment_name = models.CharField(max_length=200, blank=True, null=True)
     service_name = models.CharField(max_length=200, blank=True, null=True)
     unit_name = models.CharField(max_length=200)

@@ -3,7 +3,7 @@ from turku_api.models import Machine, Source, Auth, Storage
 
 
 class AuthAdmin(admin.ModelAdmin):
-    list_display = ('secret', 'secret_type', 'comment', 'active')
+    list_display = ('name', 'secret', 'secret_type', 'active')
 
 
 class MachineAdmin(admin.ModelAdmin):

@@ -35,17 +35,22 @@ class Auth(models.Model):
         ('storage_reg', 'Storage registration'),
     )
     id = models.CharField(max_length=36, primary_key=True, default=new_uuid, editable=False)
-    secret = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=200)
+    secret = models.CharField(max_length=200)
     secret_type = models.CharField(max_length=200, choices=SECRET_TYPES)
     comment = models.CharField(max_length=200, blank=True, null=True)
     active = models.BooleanField(default=True)
     date_added = models.DateTimeField(default=timezone.now)
 
+    class Meta:
+        unique_together = (('name', 'secret'),)
+
     def __unicode__(self):
-        if self.comment:
-            return 'Secret %s (%s)' % (self.secret, self.comment)
-        else:
-            return 'Secret %s' % self.secret
+        try:
+            t = [v[1] for i, v in enumerate(self.SECRET_TYPES) if v[0] == self.secret_type][0]
+        except IndexError:
+            t = self.secret_type
+        return '%s %s' % (t, self.name)
 
 
 class Storage(models.Model):

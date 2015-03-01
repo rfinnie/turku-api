@@ -2,6 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
+from south.modelsinspector import add_introspection_rules
 import json
 import uuid
 
@@ -47,12 +48,27 @@ def validate_machine_auth(value):
         raise ValidationError('Must be a Machine registration')
 
 
+class UuidPrimaryKeyField(models.CharField):
+    def __init__(self, *args, **kwargs):
+        super(UuidPrimaryKeyField, self).__init__(*args, **kwargs)
+        self.max_length = 36
+        self.primary_key = True
+        self.blank = True
+
+    def get_default(self):
+        import uuid
+        return str(uuid.uuid4())
+
+    def formfield(self, **kwargs):
+        return None
+
+
 class Auth(models.Model):
     SECRET_TYPES = (
         ('machine_reg', 'Machine registration'),
         ('storage_reg', 'Storage registration'),
     )
-    id = models.CharField(max_length=36, primary_key=True, default=new_uuid, editable=False)
+    id = UuidPrimaryKeyField()
     name = models.CharField(max_length=200)
     secret = models.CharField(max_length=200)
     secret_type = models.CharField(max_length=200, choices=SECRET_TYPES)
@@ -68,7 +84,7 @@ class Auth(models.Model):
 
 
 class Storage(models.Model):
-    id = models.CharField(max_length=36, primary_key=True, default=new_uuid, editable=False)
+    id = UuidPrimaryKeyField()
     name = models.CharField(max_length=200, unique=True)
     secret_hash = models.CharField(max_length=200)
     comment = models.CharField(max_length=200, blank=True, null=True)
@@ -87,7 +103,7 @@ class Storage(models.Model):
 
 
 class Machine(models.Model):
-    id = models.CharField(max_length=36, primary_key=True, default=new_uuid, editable=False)
+    id = UuidPrimaryKeyField()
     uuid = models.CharField(max_length=36, unique=True, validators=[validate_uuid])
     secret_hash = models.CharField(max_length=200)
     environment_name = models.CharField(max_length=200, blank=True, null=True)
@@ -107,7 +123,7 @@ class Machine(models.Model):
 
 
 class Source(models.Model):
-    id = models.CharField(max_length=36, primary_key=True, default=new_uuid, editable=False)
+    id = UuidPrimaryKeyField()
     name = models.CharField(max_length=200)
     machine = models.ForeignKey(Machine)
     comment = models.CharField(max_length=200, blank=True, null=True)
@@ -132,3 +148,6 @@ class Source(models.Model):
 
     def __unicode__(self):
         return '%s %s (%s)' % (self.machine.unit_name, self.name, self.path)
+
+
+add_introspection_rules([], ["^turku_api\.models\.UuidPrimaryKeyField"])

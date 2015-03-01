@@ -158,7 +158,7 @@ class ViewV1():
             new_storage_needed = True
         if new_storage_needed:
             try:
-               # XXX temporary random
+                # XXX temporary random
                 m.storage = random.choice(Storage.objects.filter(active=True))
                 modified = True
             except IndexError:

@@ -33,14 +33,14 @@ class MachineAdmin(admin.ModelAdmin):
 
 
 class SourceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'path', 'machine', 'date_last_backed_up', 'date_next_backup', 'active')
+    list_display = ('name', 'path', 'machine', 'date_last_backed_up', 'date_next_backup', 'published', 'active')
     list_display_links = ('name', 'path')
     list_filter = ('date_last_backed_up', 'date_next_backup')
 
 
 class StorageAdmin(admin.ModelAdmin):
     form = StorageAdminForm
-    list_display = ('name', 'ssh_ping_host', 'ssh_ping_user', 'active')
+    list_display = ('name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in', 'active')
 
 
 admin.site.register(Auth, AuthAdmin)

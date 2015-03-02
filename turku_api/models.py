@@ -50,17 +50,12 @@ def validate_machine_auth(value):
 
 class UuidPrimaryKeyField(models.CharField):
     def __init__(self, *args, **kwargs):
+        kwargs['blank'] = True
+        kwargs['default'] = new_uuid
+        kwargs['editable'] = False
+        kwargs['max_length'] = 36
+        kwargs['primary_key'] = True
         super(UuidPrimaryKeyField, self).__init__(*args, **kwargs)
-        self.max_length = 36
-        self.primary_key = True
-        self.blank = True
-
-    def get_default(self):
-        import uuid
-        return str(uuid.uuid4())
-
-    def formfield(self, **kwargs):
-        return None
 
 
 class Auth(models.Model):

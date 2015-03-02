@@ -386,6 +386,28 @@ class ViewV1():
 
 
 @csrf_exempt
+def health(request):
+    out = {
+        'healthy': True,
+        'counts': {
+            'auth': {
+                'active': len(Auth.objects.filter(active=True))
+            },
+            'storage': {
+                'active': len(Storage.objects.filter(active=True))
+            },
+            'machine': {
+                'active': len(Machine.objects.filter(active=True))
+            },
+            'source': {
+                'active': len(Source.objects.filter(active=True))
+            },
+        },
+    }
+    return HttpResponse(json.dumps(out), content_type='application/json')
+
+
+@csrf_exempt
 def update_config(request):
     try:
         return ViewV1(request).update_config()

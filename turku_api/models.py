@@ -214,7 +214,7 @@ class Machine(models.Model):
     )
 
     def __unicode__(self):
-        return '%s (%s)' % (self.unit_name, self.uuid)
+        return '%s (%s)' % (self.unit_name, self.uuid[0:8])
 
 
 class Source(models.Model):

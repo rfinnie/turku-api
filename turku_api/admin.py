@@ -1,6 +1,33 @@
 from django import forms
 from django.contrib import admin
 from turku_api.models import Machine, Source, Auth, Storage
+from django.utils.html import format_html
+from django.core.urlresolvers import reverse
+
+
+def get_admin_change_link(obj, name=None):
+    url = reverse(
+        'admin:%s_%s_change' % (obj._meta.app_label, obj._meta.model_name),
+        args=(obj.id,)
+    )
+    if not name:
+        name = obj
+    return format_html(
+        '<a href="%s">%s</a>' % (url, unicode(name))
+    )
+
+
+class ReadonlyTabularInline(admin.TabularInline):
+    can_delete = False
+    extra = 0
+    editable_fields = []
+
+    def __init__(self, *args, **kwargs):
+        self.readonly_fields = self.fields
+        super(ReadonlyTabularInline, self).__init__(*args, **kwargs)
+
+    def has_add_permission(self, request):
+        return False
 
 
 class MachineAdminForm(forms.ModelForm):
@@ -23,24 +50,66 @@ class StorageAdminForm(forms.ModelForm):
 
 class AuthAdmin(admin.ModelAdmin):
     list_display = ('name', 'secret', 'secret_type', 'active')
+    ordering = ('name',)
+
+
+class MachineInline(ReadonlyTabularInline):
+    def unit_name_link(self, obj):
+        return get_admin_change_link(obj, obj.unit_name)
+
+    unit_name_link.allow_tags = True
+    unit_name_link.short_description = 'unit name'
+
+    model = Machine
+    fields = ('unit_name_link', 'uuid', 'environment_name', 'service_name', 'date_checked_in', 'active')
+
+
+class SourceInline(ReadonlyTabularInline):
+    def name_link(self, obj):
+        return get_admin_change_link(obj, obj.name)
+
+    name_link.allow_tags = True
+    name_link.short_description = 'name'
+
+    model = Source
+    fields = ('name_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active')
 
 
 class MachineAdmin(admin.ModelAdmin):
+    def storage_link(self, obj):
+        return get_admin_change_link(obj.storage)
+
+    storage_link.allow_tags = True
+    storage_link.admin_order_field = 'storage__name'
+    storage_link.short_description = 'storage'
+
     form = MachineAdminForm
-    list_display = ('unit_name', 'uuid', 'storage', 'environment_name', 'service_name', 'date_checked_in', 'active')
-    list_display_links = ('unit_name', 'uuid')
+    inlines = (SourceInline,)
+    list_display = ('unit_name', 'uuid', 'storage_link', 'environment_name', 'service_name', 'date_checked_in', 'active')
+    list_display_links = ('unit_name',)
     list_filter = ('date_checked_in',)
+    ordering = ('unit_name',)
 
 
 class SourceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'path', 'machine', 'date_last_backed_up', 'date_next_backup', 'published', 'active')
-    list_display_links = ('name', 'path')
+    def machine_link(self, obj):
+        return get_admin_change_link(obj.machine)
+
+    machine_link.allow_tags = True
+    machine_link.admin_order_field = 'machine__unit_name'
+    machine_link.short_description = 'machine'
+
+    list_display = ('name', 'machine_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active')
+    list_display_links = ('name',)
     list_filter = ('date_last_backed_up', 'date_next_backup')
+    ordering = ('machine__unit_name', 'name')
 
 
 class StorageAdmin(admin.ModelAdmin):
     form = StorageAdminForm
+    inlines = (MachineInline,)
     list_display = ('name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in', 'active')
+    ordering = ('name',)
 
 
 admin.site.register(Auth, AuthAdmin)

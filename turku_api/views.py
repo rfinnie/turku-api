@@ -65,11 +65,12 @@ def frequency_next_scheduled(frequency, base_time=None):
     time_range = f[1].split('-')
     start = (int(time_range[0][0:2]) * 60 * 60) + (int(time_range[0][2:4]) * 60)
     if len(time_range) == 1:
+        # Not a range
         return (target_date + timedelta(seconds=start))
     end = (int(time_range[1][0:2]) * 60 * 60) + (int(time_range[1][2:4]) * 60)
-    if start > end:
-        # Invalid range
-        return (target_date + timedelta(seconds=random.randint(0, 86399)))
+    if end < start:
+        # Day rollover
+        end = end + 86400
     return (target_date + timedelta(seconds=random.randint(start, end)))
 
 

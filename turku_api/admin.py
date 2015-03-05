@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib import admin
-from turku_api.models import Machine, Source, Auth, Storage
+from turku_api.models import Machine, Source, Auth, Storage, BackupLog
 from django.utils.html import format_html
 from django.core.urlresolvers import reverse
 
@@ -61,7 +61,7 @@ class MachineInline(ReadonlyTabularInline):
     unit_name_link.short_description = 'unit name'
 
     model = Machine
-    fields = ('unit_name_link', 'uuid', 'environment_name', 'service_name', 'date_checked_in', 'active')
+    fields = ('unit_name_link', 'uuid', 'environment_name', 'service_name', 'date_checked_in', 'healthy')
 
 
 class SourceInline(ReadonlyTabularInline):
@@ -72,7 +72,19 @@ class SourceInline(ReadonlyTabularInline):
     name_link.short_description = 'name'
 
     model = Source
-    fields = ('name_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active')
+    fields = ('name_link', 'path', 'date_last_backed_up', 'date_next_backup', 'healthy')
+
+
+class BackupLogInline(ReadonlyTabularInline):
+    def date_link(self, obj):
+        return get_admin_change_link(obj, obj.date)
+
+    date_link.allow_tags = True
+    date_link.short_description = 'date'
+
+    model = BackupLog
+    fields = ('date_link', 'storage', 'success', 'date_begin', 'date_end')
+    max_num = 5
 
 
 class MachineAdmin(admin.ModelAdmin):
@@ -85,7 +97,7 @@ class MachineAdmin(admin.ModelAdmin):
 
     form = MachineAdminForm
     inlines = (SourceInline,)
-    list_display = ('unit_name', 'uuid', 'storage_link', 'environment_name', 'service_name', 'date_checked_in', 'active')
+    list_display = ('unit_name', 'uuid', 'storage_link', 'environment_name', 'service_name', 'date_checked_in', 'healthy')
     list_display_links = ('unit_name',)
     list_filter = ('date_checked_in',)
     ordering = ('unit_name',)
@@ -99,16 +111,30 @@ class SourceAdmin(admin.ModelAdmin):
     machine_link.admin_order_field = 'machine__unit_name'
     machine_link.short_description = 'machine'
 
-    list_display = ('name', 'machine_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active')
+    # max_num=5 isn't working for some reason, making this unweildy
+    #inlines = (BackupLogInline,)
+    list_display = ('name', 'machine_link', 'path', 'date_last_backed_up', 'date_next_backup', 'healthy')
     list_display_links = ('name',)
     list_filter = ('date_last_backed_up', 'date_next_backup')
     ordering = ('machine__unit_name', 'name')
 
 
+class BackupLogAdmin(admin.ModelAdmin):
+    def source_link(self, obj):
+        return get_admin_change_link(obj.source)
+
+    source_link.allow_tags = True
+    source_link.admin_order_field = 'source__name'
+    source_link.short_description = 'source'
+
+    list_display = ('date', 'source_link', 'success', 'date_begin', 'date_end')
+    list_display_links = ('date',)
+    ordering = ('-date',)
+
 class StorageAdmin(admin.ModelAdmin):
     form = StorageAdminForm
     inlines = (MachineInline,)
-    list_display = ('name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in', 'active')
+    list_display = ('name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in', 'healthy')
     ordering = ('name',)
 
 
@@ -116,3 +142,4 @@ admin.site.register(Auth, AuthAdmin)
 admin.site.register(Machine, MachineAdmin)
 admin.site.register(Source, SourceAdmin)
 admin.site.register(Storage, StorageAdmin)
+admin.site.register(BackupLog, BackupLogAdmin)

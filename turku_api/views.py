@@ -3,11 +3,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
-from turku_api.models import Auth, Machine, Source, Storage
+from turku_api.models import Auth, Machine, Source, Storage, BackupLog
 
 import json
 import random
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.contrib.auth import hashers
 
 
@@ -304,10 +304,26 @@ class ViewV1():
             s = m.source_set.get(name=self.req['source_name'], active=True, published=True)
         except Source.DoesNotExist:
             raise HttpResponseException(HttpResponseNotFound('Source not found'))
-        if self.req['success']:
-            s.date_last_backed_up = timezone.now()
-            s.date_next_backup = frequency_next_scheduled(s.frequency)
-            s.save()
+        now = timezone.now()
+        is_success = ('success' in self.req and self.req['success'])
+        s.success = is_success
+        if is_success:
+            s.date_last_backed_up = now
+            s.date_next_backup = frequency_next_scheduled(s.frequency, now)
+        s.save()
+        bl = BackupLog()
+        bl.source = s
+        bl.date = now
+        bl.storage = self.storage
+        bl.success = is_success
+        if 'backup_data' in self.req:
+            if 'summary' in self.req['backup_data']:
+                bl.summary = self.req['backup_data']['summary']
+            if 'time_begin' in self.req['backup_data']:
+                bl.date_begin = timezone.make_aware(datetime.utcfromtimestamp(self.req['backup_data']['time_begin']), timezone.utc)
+            if 'time_end' in self.req['backup_data']:
+                bl.date_end = timezone.make_aware(datetime.utcfromtimestamp(self.req['backup_data']['time_end']), timezone.utc)
+        bl.save()
         return HttpResponse(json.dumps({}), content_type='application/json')
 
     def storage_update_config(self):

@@ -2,6 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
+from datetime import timedelta
 from south.modelsinspector import add_introspection_rules
 import json
 import uuid
@@ -97,6 +98,12 @@ class Auth(models.Model):
 
 
 class Storage(models.Model):
+    def healthy(self):
+        if not self.active:
+            return False
+        return (timezone.now() <= (self.date_checked_in + timedelta(minutes=30)))
+    healthy.boolean = True
+
     id = UuidPrimaryKeyField()
     name = models.CharField(
         max_length=200, unique=True,
@@ -157,6 +164,12 @@ class Storage(models.Model):
 
 
 class Machine(models.Model):
+    def healthy(self):
+        if not self.active:
+            return False
+        return (timezone.now() <= (self.date_checked_in + timedelta(hours=4)))
+    healthy.boolean = True
+
     id = UuidPrimaryKeyField()
     uuid = models.CharField(
         max_length=36, unique=True, validators=[validate_uuid],
@@ -218,6 +231,12 @@ class Machine(models.Model):
 
 
 class Source(models.Model):
+    def healthy(self):
+        if not (self.success and self.published and self.active):
+            return False
+        return (timezone.now() <= (self.date_next_backup + timedelta(hours=4)))
+    healthy.boolean = True
+
     id = UuidPrimaryKeyField()
     name = models.CharField(
         max_length=200,
@@ -271,6 +290,10 @@ class Source(models.Model):
         default=True,
         help_text='Whether this source is enabled.  Disabling means the API server no longer gives it to the storage unit, even if it\'s time for a backup.',
     )
+    success = models.BooleanField(
+        default=True,
+        help_text='Whether this source\'s last backup was successful.',
+    )
     published = models.BooleanField(
         default=True,
         help_text='Whether this source is actively being published by the machine agent.',
@@ -297,6 +320,38 @@ class Source(models.Model):
 
     def __unicode__(self):
         return '%s %s (%s)' % (self.machine.unit_name, self.name, self.path)
+
+
+class BackupLog(models.Model):
+    id = UuidPrimaryKeyField()
+    source = models.ForeignKey(
+        Source,
+        help_text='Source this log entry belongs to.',
+    )
+    date = models.DateTimeField(
+        default=timezone.now,
+        help_text='Date/time this log entry was received/processed.',
+    )
+    storage = models.ForeignKey(
+        Storage, blank=True, null=True,
+        help_text='Storage unit this backup occurred on.',
+    )
+    success = models.BooleanField(
+        default=False,
+        help_text='Whether this backup succeeded.',
+    )
+    date_begin = models.DateTimeField(
+        blank=True, null=True,
+        help_text='Date/time this backup began.',
+    )
+    date_end = models.DateTimeField(
+        blank=True, null=True,
+        help_text='Date/time this backup ended.',
+    )
+    summary = models.TextField(
+        blank=True, null=True,
+        help_text='Summary of the backup\'s events.',
+    )
 
 
 add_introspection_rules([], ["^turku_api\.models\.UuidPrimaryKeyField"])

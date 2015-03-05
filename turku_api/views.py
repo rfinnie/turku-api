@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
-from turku_api.models import Auth, Machine, Source, Storage, BackupLog
+from turku_api.models import Auth, Machine, Source, Storage, BackupLog, FilterSet
 
 import json
 import random
@@ -213,7 +213,7 @@ class ViewV1():
                     if k == 'frequency':
                         s.date_next_backup = frequency_next_scheduled(req_sources[s.name][k])
                     modified = True
-            for k in ('exclude',):
+            for k in ('filter', 'exclude'):
                 if k not in req_sources[s.name]:
                     continue
                 v = json.dumps(req_sources[s.name][k], sort_keys=True)
@@ -243,7 +243,7 @@ class ViewV1():
                 setattr(s, k, req_sources[s.name][k])
                 if k == 'frequency':
                     s.date_next_backup = frequency_next_scheduled(req_sources[s.name][k])
-            for k in ('exclude',):
+            for k in ('filter', 'exclude'):
                 if k not in req_sources[s.name]:
                     continue
                 v = json.dumps(req_sources[s.name][k], sort_keys=True)
@@ -264,6 +264,24 @@ class ViewV1():
         }
         return HttpResponse(json.dumps(out), content_type='application/json')
 
+    def build_filters(self, set, loaded_sets=[]):
+        out = []
+        for f in set:
+            if f.startswith(('.', 'source')):
+                (verb, subsetname) = f.split(' ', 1)
+                if subsetname in loaded_sets:
+                    continue
+                try:
+                    fs = FilterSet.objects.get(name=subsetname, active=True)
+                except FilterSet.DoesNotExist:
+                    continue
+                for f2 in self.build_filters(json.loads(fs.filters), loaded_sets):
+                    out.append(f2)
+                loaded_sets.append(subsetname)
+            else:
+                out.append(f)
+        return out
+
     def storage_ping_checkin(self):
         self._storage_authenticate()
         m = self._storage_get_machine()
@@ -277,6 +295,7 @@ class ViewV1():
                 'username': s.username,
                 'password': s.password,
                 'retention': s.retention,
+                'filter': self.build_filters(json.loads(s.filter)),
                 'exclude': json.loads(s.exclude),
                 'shared_service': s.shared_service,
                 'large_rotating_files': s.large_rotating_files,

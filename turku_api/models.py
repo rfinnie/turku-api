@@ -262,6 +262,10 @@ class Source(models.Model):
         max_length=200,
         help_text='Machine-generated cleartext password associated with this source, used by the storage unit to authenticate to the machine\'s rsync module.',
     )
+    filter = models.CharField(
+        max_length=2048, default='[]', validators=[validate_json_string_list],
+        help_text='JSON list of rsync-compatible --filter options.',
+    )
     exclude = models.CharField(
         max_length=2048, default='[]', validators=[validate_json_string_list],
         help_text='JSON list of rsync-compatible --exclude options.',
@@ -351,6 +355,30 @@ class BackupLog(models.Model):
     summary = models.TextField(
         blank=True, null=True,
         help_text='Summary of the backup\'s events.',
+    )
+
+
+class FilterSet(models.Model):
+    id = UuidPrimaryKeyField()
+    name = models.CharField(
+        max_length=200, unique=True,
+        help_text='Name of this filter set.',
+    )
+    filters = models.TextField(
+        default='[]', validators=[validate_json_string_list],
+        help_text='JSON list of this filter set\'s filter rules.',
+    )
+    comment = models.CharField(
+        max_length=200, blank=True, null=True,
+        help_text='Human-readable comment.',
+    )
+    active = models.BooleanField(
+        default=True,
+        help_text='Whether this filter set is enabled.',
+    )
+    date_added = models.DateTimeField(
+        default=timezone.now,
+        help_text='Date/time this filter set was added.',
     )
 
 

@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib import admin
-from turku_api.models import Machine, Source, Auth, Storage, BackupLog
+from turku_api.models import Machine, Source, Auth, Storage, BackupLog, FilterSet
 from django.utils.html import format_html
 from django.core.urlresolvers import reverse
 
@@ -131,6 +131,12 @@ class BackupLogAdmin(admin.ModelAdmin):
     list_display_links = ('date',)
     ordering = ('-date',)
 
+
+class FilterSetAdmin(admin.ModelAdmin):
+    list_display = ('name', 'date_added', 'active')
+    ordering = ('name',)
+
+
 class StorageAdmin(admin.ModelAdmin):
     form = StorageAdminForm
     inlines = (MachineInline,)
@@ -143,3 +149,4 @@ admin.site.register(Machine, MachineAdmin)
 admin.site.register(Source, SourceAdmin)
 admin.site.register(Storage, StorageAdmin)
 admin.site.register(BackupLog, BackupLogAdmin)
+admin.site.register(FilterSet, FilterSetAdmin)

@@ -264,7 +264,9 @@ class ViewV1():
         }
         return HttpResponse(json.dumps(out), content_type='application/json')
 
-    def build_filters(self, set, loaded_sets=[]):
+    def build_filters(self, set, loaded_sets=None):
+        if not loaded_sets:
+            loaded_sets = []
         out = []
         for f in set:
             if f.startswith(('.', 'source')):

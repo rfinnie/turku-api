@@ -1,24 +1,11 @@
 import os
-
+import random
+import string
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-try:
-    from database_settings import DATABASES
-except ImportError:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
-    }
-try:
-    from secret_settings import SECRET_KEY
-except ImportError:
-    import random, string
-    SECRET_KEY = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(30))
-DEBUG = True
-TEMPLATE_DEBUG = True
-ALLOWED_HOSTS = ['turku.canonical.com']
+DEBUG = False
+TEMPLATE_DEBUG = False
+ALLOWED_HOSTS = ['*']
 INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
@@ -45,3 +32,23 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 STATIC_URL = '/static/'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
+SECRET_KEY = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(30))
+
+try:
+    from local_settings import *
+except ImportError:
+    pass
+try:
+    from database_settings import *
+except ImportError:
+    pass
+try:
+    from secret_settings import *
+except ImportError:
+    pass

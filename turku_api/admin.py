@@ -83,7 +83,7 @@ class BackupLogInline(ReadonlyTabularInline):
     date_link.short_description = 'date'
 
     model = BackupLog
-    fields = ('date_link', 'storage', 'success', 'date_begin', 'date_end')
+    fields = ('date_link', 'storage', 'success', 'snapshot', 'date_begin', 'date_end')
     max_num = 5
 
 
@@ -127,7 +127,7 @@ class BackupLogAdmin(admin.ModelAdmin):
     source_link.admin_order_field = 'source__name'
     source_link.short_description = 'source'
 
-    list_display = ('date', 'source_link', 'success', 'date_begin', 'date_end')
+    list_display = ('date', 'source_link', 'success', 'snapshot', 'date_begin', 'date_end')
     list_display_links = ('date',)
     ordering = ('-date',)
 

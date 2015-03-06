@@ -352,6 +352,10 @@ class BackupLog(models.Model):
         blank=True, null=True,
         help_text='Date/time this backup ended.',
     )
+    snapshot = models.CharField(
+        max_length=200, blank=True, null=True,
+        help_text='Name of the created snapshot.',
+    )
     summary = models.TextField(
         blank=True, null=True,
         help_text='Summary of the backup\'s events.',

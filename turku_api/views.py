@@ -338,6 +338,8 @@ class ViewV1():
         bl.storage = self.storage
         bl.success = is_success
         if 'backup_data' in self.req:
+            if 'snapshot' in self.req['backup_data']:
+                bl.snapshot = self.req['backup_data']['snapshot']
             if 'summary' in self.req['backup_data']:
                 bl.summary = self.req['backup_data']['summary']
             if 'time_begin' in self.req['backup_data']:

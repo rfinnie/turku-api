@@ -99,7 +99,7 @@ class Auth(models.Model):
 
 class Storage(models.Model):
     def healthy(self):
-        if not self.active:
+        if not (self.active and self.date_checked_in):
             return False
         return (timezone.now() <= (self.date_checked_in + timedelta(minutes=30)))
     healthy.boolean = True
@@ -165,7 +165,7 @@ class Storage(models.Model):
 
 class Machine(models.Model):
     def healthy(self):
-        if not self.active:
+        if not (self.active and self.date_checked_in):
             return False
         return (timezone.now() <= (self.date_checked_in + timedelta(hours=4)))
     healthy.boolean = True
@@ -232,7 +232,7 @@ class Machine(models.Model):
 
 class Source(models.Model):
     def healthy(self):
-        if not (self.success and self.published and self.active):
+        if not (self.success and self.published and self.active and self.date_next_backup):
             return False
         return (timezone.now() <= (self.date_next_backup + timedelta(hours=4)))
     healthy.boolean = True

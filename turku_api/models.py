@@ -136,7 +136,15 @@ class Storage(models.Model):
     ssh_ping_user = models.CharField(
         max_length=200,
         verbose_name='SSH ping user',
-        help_text='Username of this storage unit\s SSH server.',
+        help_text='Username of this storage unit\'s SSH server.',
+    )
+    space_total = models.PositiveIntegerField(
+        default=0,
+        help_text='Total disk space of this storage unit\'s storage directories, in MiB.',
+    )
+    space_available = models.PositiveIntegerField(
+        default=0,
+        help_text='Available disk space of this storage unit\'s storage directories, in MiB.',
     )
     auth = models.ForeignKey(
         Auth, validators=[validate_storage_auth],

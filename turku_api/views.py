@@ -74,6 +74,22 @@ def frequency_next_scheduled(frequency, base_time=None):
     return (target_date + timedelta(seconds=random.randint(start, end)))
 
 
+def random_weighted(m):
+    """Return a weighted random key."""
+    total = sum([v for v in m.values()])
+    if total <= 0:
+        return random.choice(m.keys())
+    weighted = []
+    tp = 0
+    for (k, v) in m.items():
+        tp = tp + (float(v) / float(total))
+        weighted.append((k, tp))
+    r = random.random()
+    for (k, v) in weighted:
+        if r < v:
+            return k
+
+
 class HttpResponseException(Exception):
     def __init__(self, message):
         self.message = message
@@ -159,8 +175,10 @@ class ViewV1():
             new_storage_needed = True
         if new_storage_needed:
             try:
-                # XXX temporary random
-                m.storage = random.choice(Storage.objects.filter(active=True))
+                weights = {}
+                for storage in Storage.objects.filter(active=True):
+                    weights[storage] = storage.space_available
+                m.storage = random_weighted(weights)
                 modified = True
             except IndexError:
                 raise HttpResponseException(HttpResponseNotFound('No storages are currently available'))
@@ -389,7 +407,7 @@ class ViewV1():
 
         # If any of these exist in the request, add or update them in the
         # self.storage.
-        for k in ('comment', 'ssh_ping_host', 'ssh_ping_port', 'ssh_ping_user'):
+        for k in ('comment', 'ssh_ping_host', 'ssh_ping_port', 'ssh_ping_user', 'space_total', 'space_available'):
             if (k in req_storage) and (getattr(self.storage, k) != req_storage[k]):
                 setattr(self.storage, k, req_storage[k])
                 modified = True

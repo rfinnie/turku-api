@@ -320,6 +320,7 @@ class ViewV1():
                 'shared_service': s.shared_service,
                 'large_rotating_files': s.large_rotating_files,
                 'large_modifying_files': s.large_modifying_files,
+                'snapshot_mode': s.snapshot_mode,
             })
 
         out = {

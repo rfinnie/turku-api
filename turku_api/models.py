@@ -245,6 +245,11 @@ class Source(models.Model):
         return (timezone.now() <= (self.date_next_backup + timedelta(hours=4)))
     healthy.boolean = True
 
+    SNAPSHOT_MODES = (
+        ('none', 'No snapshotting'),
+        ('attic', 'Attic'),
+        ('link-dest', 'Hardlink trees (rsync --link-dest)'),
+    )
     id = UuidPrimaryKeyField()
     name = models.CharField(
         max_length=200,
@@ -285,6 +290,11 @@ class Source(models.Model):
     retention = models.CharField(
         max_length=200, default='last 5 days, earliest of month',
         help_text='Retention schedule, describing when to preserve snapshots.',
+    )
+    snapshot_mode = models.CharField(
+        blank=True, null=True,
+        max_length=200, choices=SNAPSHOT_MODES,
+        help_text='Override the storage unit\'s snapshot logic and use an explicit snapshot mode for this source.',
     )
     shared_service = models.BooleanField(
         default=False,

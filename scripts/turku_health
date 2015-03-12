@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+# Turku backups
+# Copyright 2015 Canonical Ltd.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 3, as published by
+# the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranties of MERCHANTABILITY,
+# SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import sys
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "turku_api.settings")
+
+from turku_api.models import Machine, Source, Storage
+
+storages_total = 0
+storages_sick = 0
+machines_total = 0
+machines_sick = 0
+sources_total = 0
+sources_sick = 0
+sick_objects = []
+
+for storage in Storage.objects.filter(active=True):
+    storages_total += 1
+    if not storage.healthy():
+        storages_sick += 1
+        sick_objects.append(repr(storage))
+
+for machine in Machine.objects.filter(active=True):
+    machines_total += 1
+    if not machine.healthy():
+        machines_sick += 1
+        sick_objects.append(repr(machine))
+
+for source in Source.objects.filter(active=True, published=True):
+    sources_total += 1
+    if not source.healthy():
+        sources_sick += 1
+        sick_objects.append(repr(source))
+
+if (storages_sick > 0) or (machines_sick > 0) or (sources_sick > 0):
+    print 'CRITICAL %d/%d storages, %d/%d machines, %d/%d sources' % (storages_sick, storages_total, machines_sick, machines_total, sources_sick, sources_total)
+    for object in sick_objects:
+        print object
+    sys.exit(2)
+else:
+    print 'OK %d storages, %d machines, %d sources' % (storages_total, machines_total, sources_total)
+    sys.exit(0)

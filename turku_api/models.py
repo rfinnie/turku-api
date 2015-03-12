@@ -99,9 +99,13 @@ class Auth(models.Model):
 
 class Storage(models.Model):
     def healthy(self):
-        if not (self.active and self.date_checked_in):
+        now = timezone.now()
+        if now <= (self.date_registered + timedelta(minutes=30)):
+            # New registration, assume it's healthy
+            return True
+        if not self.date_checked_in:
             return False
-        return (timezone.now() <= (self.date_checked_in + timedelta(minutes=30)))
+        return (now <= (self.date_checked_in + timedelta(minutes=30)))
     healthy.boolean = True
 
     id = UuidPrimaryKeyField()
@@ -173,9 +177,13 @@ class Storage(models.Model):
 
 class Machine(models.Model):
     def healthy(self):
-        if not (self.active and self.date_checked_in):
+        now = timezone.now()
+        if now <= (self.date_registered + timedelta(hours=1)):
+            # New registration, assume it's healthy
+            return True
+        if not self.date_checked_in:
             return False
-        return (timezone.now() <= (self.date_checked_in + timedelta(hours=4)))
+        return (now <= (self.date_checked_in + timedelta(hours=4)))
     healthy.boolean = True
 
     id = UuidPrimaryKeyField()
@@ -240,9 +248,13 @@ class Machine(models.Model):
 
 class Source(models.Model):
     def healthy(self):
-        if not (self.success and self.published and self.active and self.date_next_backup):
+        now = timezone.now()
+        if now <= (self.date_added + timedelta(hours=4)):
+            # New addition, assume it's healthy
+            return True
+        if not self.success:
             return False
-        return (timezone.now() <= (self.date_next_backup + timedelta(hours=4)))
+        return (now <= (self.date_next_backup + timedelta(hours=4)))
     healthy.boolean = True
 
     SNAPSHOT_MODES = (

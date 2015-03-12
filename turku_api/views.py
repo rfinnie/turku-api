@@ -446,21 +446,19 @@ class ViewV1():
 
 @csrf_exempt
 def health(request):
+    # This is a general purpose test of the API server (its ability
+    # to connect to its database and serve data).  It does not
+    # indicate the health of machines, storage units, etc.
     out = {
         'healthy': True,
+        'date': timezone.now().isoformat(),
         'counts': {
-            'auth': {
-                'active': len(Auth.objects.filter(active=True))
-            },
-            'storage': {
-                'active': len(Storage.objects.filter(active=True))
-            },
-            'machine': {
-                'active': len(Machine.objects.filter(active=True))
-            },
-            'source': {
-                'active': len(Source.objects.filter(active=True))
-            },
+            'auth': len(Auth.objects.all()),
+            'storage': len(Storage.objects.all()),
+            'machine': len(Machine.objects.all()),
+            'source': len(Source.objects.all()),
+            'filter_set': len(FilterSet.objects.all()),
+            'backup_log': len(BackupLog.objects.all()),
         },
     }
     return HttpResponse(json.dumps(out), content_type='application/json')

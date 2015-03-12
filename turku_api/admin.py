@@ -61,7 +61,7 @@ class MachineInline(ReadonlyTabularInline):
     unit_name_link.short_description = 'unit name'
 
     model = Machine
-    fields = ('unit_name_link', 'uuid', 'environment_name', 'service_name', 'date_checked_in', 'healthy')
+    fields = ('unit_name_link', 'uuid', 'environment_name', 'service_name', 'date_checked_in', 'active', 'healthy')
 
 
 class SourceInline(ReadonlyTabularInline):
@@ -72,7 +72,7 @@ class SourceInline(ReadonlyTabularInline):
     name_link.short_description = 'name'
 
     model = Source
-    fields = ('name_link', 'path', 'date_last_backed_up', 'date_next_backup', 'healthy')
+    fields = ('name_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active', 'healthy')
 
 
 class BackupLogInline(ReadonlyTabularInline):
@@ -97,7 +97,7 @@ class MachineAdmin(admin.ModelAdmin):
 
     form = MachineAdminForm
     inlines = (SourceInline,)
-    list_display = ('unit_name', 'uuid', 'storage_link', 'environment_name', 'service_name', 'date_checked_in', 'healthy')
+    list_display = ('unit_name', 'uuid', 'storage_link', 'environment_name', 'service_name', 'date_checked_in', 'active', 'healthy')
     list_display_links = ('unit_name',)
     list_filter = ('date_checked_in',)
     ordering = ('unit_name',)
@@ -113,7 +113,7 @@ class SourceAdmin(admin.ModelAdmin):
 
     # max_num=5 isn't working for some reason, making this unweildy
     #inlines = (BackupLogInline,)
-    list_display = ('name', 'machine_link', 'path', 'date_last_backed_up', 'date_next_backup', 'healthy')
+    list_display = ('name', 'machine_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active', 'healthy')
     list_display_links = ('name',)
     list_filter = ('date_last_backed_up', 'date_next_backup')
     ordering = ('machine__unit_name', 'name')
@@ -140,7 +140,7 @@ class FilterSetAdmin(admin.ModelAdmin):
 class StorageAdmin(admin.ModelAdmin):
     form = StorageAdminForm
     inlines = (MachineInline,)
-    list_display = ('name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in', 'healthy')
+    list_display = ('name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in', 'active', 'healthy')
     ordering = ('name',)
 
 

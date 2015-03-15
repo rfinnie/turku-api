@@ -3,6 +3,7 @@ from django.contrib import admin
 from turku_api.models import Machine, Source, Auth, Storage, BackupLog, FilterSet
 from django.utils.html import format_html
 from django.core.urlresolvers import reverse
+import datetime
 
 
 def get_admin_change_link(obj, name=None):
@@ -87,6 +88,29 @@ class BackupLogInline(ReadonlyTabularInline):
     max_num = 5
 
 
+class ExcludeListFilter(admin.SimpleListFilter):
+    def __init__(self, *args, **kwargs):
+        if not self.title:
+            self.title = self.parameter_name
+        self.parameter_name += '__exclude'
+        super(ExcludeListFilter, self).__init__(*args, **kwargs)
+
+    def has_output(self):
+        if self.value():
+            return True
+        return super(ExcludeListFilter, self).has_output()
+
+    def lookups(self, request, model_admin):
+        return
+
+    def queryset(self, request, queryset):
+        return queryset.exclude(**{self.parameter_name[:-9]: self.value()})
+
+
+class NameExcludeListFilter(ExcludeListFilter):
+    parameter_name = 'name'
+
+
 class MachineAdmin(admin.ModelAdmin):
     def storage_link(self, obj):
         return get_admin_change_link(obj.storage)
@@ -99,7 +123,7 @@ class MachineAdmin(admin.ModelAdmin):
     inlines = (SourceInline,)
     list_display = ('unit_name', 'uuid', 'storage_link', 'environment_name', 'service_name', 'date_checked_in', 'active', 'healthy')
     list_display_links = ('unit_name',)
-    list_filter = ('date_checked_in',)
+    list_filter = ('date_checked_in', 'storage', 'active')
     ordering = ('unit_name',)
 
 
@@ -115,7 +139,7 @@ class SourceAdmin(admin.ModelAdmin):
     #inlines = (BackupLogInline,)
     list_display = ('name', 'machine_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active', 'healthy')
     list_display_links = ('name',)
-    list_filter = ('date_last_backed_up', 'date_next_backup')
+    list_filter = ('date_last_backed_up', 'date_next_backup', 'active', 'published', NameExcludeListFilter)
     ordering = ('machine__unit_name', 'name')
 
 
@@ -127,8 +151,27 @@ class BackupLogAdmin(admin.ModelAdmin):
     source_link.admin_order_field = 'source__name'
     source_link.short_description = 'source'
 
-    list_display = ('date', 'source_link', 'success', 'snapshot', 'date_begin', 'date_end')
+    def duration(self, obj):
+        if not (obj.date_end and obj.date_begin):
+            return None
+        d = obj.date_end - obj.date_begin
+        return d - datetime.timedelta(microseconds=d.microseconds)
+
+    duration.admin_order_field = 'date_end'
+    duration.short_description = 'duration'
+
+    def storage_link(self, obj):
+        if not obj.storage:
+            return None
+        return get_admin_change_link(obj.storage)
+
+    storage_link.allow_tags = True
+    storage_link.admin_order_field = 'storage__name'
+    storage_link.short_description = 'storage'
+
+    list_display = ('date', 'source_link', 'success', 'snapshot', 'storage_link', 'duration')
     list_display_links = ('date',)
+    list_filter = ('date', 'success')
     ordering = ('-date',)
 
 

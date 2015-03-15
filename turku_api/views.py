@@ -453,12 +453,12 @@ def health(request):
         'healthy': True,
         'date': timezone.now().isoformat(),
         'counts': {
-            'auth': len(Auth.objects.all()),
-            'storage': len(Storage.objects.all()),
-            'machine': len(Machine.objects.all()),
-            'source': len(Source.objects.all()),
-            'filter_set': len(FilterSet.objects.all()),
-            'backup_log': len(BackupLog.objects.all()),
+            'auth': Auth.objects.count(),
+            'storage': Storage.objects.count(),
+            'machine': Machine.objects.count(),
+            'source': Source.objects.count(),
+            'filter_set': FilterSet.objects.count(),
+            'backup_log': BackupLog.objects.count(),
         },
     }
     return HttpResponse(json.dumps(out), content_type='application/json')

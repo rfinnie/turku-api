@@ -1,0 +1,12 @@
+{% extends 'admin/change_form.html' %}
+{% block after_related_objects %} 
+{% if related_links %}
+<h2>Related</h2>
+<ul>
+{% for link_obj, link_count in related_links %}
+  {% url 'admin:'|add:app_label|add:'_'|add:link_obj.opts.model_name|add:'_changelist' as link_url %}
+  <li><a href="{{ link_url }}?{{ link_obj.field.name }}={{ object_id }}">{{ link_obj.opts.verbose_name_plural|capfirst|escape }} ({{ link_count }})</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

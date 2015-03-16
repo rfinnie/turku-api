@@ -18,17 +18,18 @@ def get_admin_change_link(obj, name=None):
     )
 
 
-class ReadonlyTabularInline(admin.TabularInline):
-    can_delete = False
-    extra = 0
-    editable_fields = []
+class CustomModelAdmin(admin.ModelAdmin):
+    change_form_template = 'admin/custom_change_form.html'
 
-    def __init__(self, *args, **kwargs):
-        self.readonly_fields = self.fields
-        super(ReadonlyTabularInline, self).__init__(*args, **kwargs)
+    def render_change_form(self, request, context, *args, **kwargs):
+        related_links = []
+        if 'object_id' in context:
+            for obj in self.model._meta.get_all_related_objects():
+                count = obj.model.objects.filter(**{obj.field.name: context['object_id']}).count()
+                related_links.append((obj, count))
+        context.update({'related_links': related_links})
 
-    def has_add_permission(self, request):
-        return False
+        return super(CustomModelAdmin, self).render_change_form(request, context, *args, **kwargs)
 
 
 class MachineAdminForm(forms.ModelForm):
@@ -49,43 +50,9 @@ class StorageAdminForm(forms.ModelForm):
         self.fields['auth'].queryset = Auth.objects.filter(secret_type='storage_reg')
 
 
-class AuthAdmin(admin.ModelAdmin):
+class AuthAdmin(CustomModelAdmin):
     list_display = ('name', 'secret', 'secret_type', 'active')
     ordering = ('name',)
-
-
-class MachineInline(ReadonlyTabularInline):
-    def unit_name_link(self, obj):
-        return get_admin_change_link(obj, obj.unit_name)
-
-    unit_name_link.allow_tags = True
-    unit_name_link.short_description = 'unit name'
-
-    model = Machine
-    fields = ('unit_name_link', 'uuid', 'environment_name', 'service_name', 'date_checked_in', 'active', 'healthy')
-
-
-class SourceInline(ReadonlyTabularInline):
-    def name_link(self, obj):
-        return get_admin_change_link(obj, obj.name)
-
-    name_link.allow_tags = True
-    name_link.short_description = 'name'
-
-    model = Source
-    fields = ('name_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active', 'healthy')
-
-
-class BackupLogInline(ReadonlyTabularInline):
-    def date_link(self, obj):
-        return get_admin_change_link(obj, obj.date)
-
-    date_link.allow_tags = True
-    date_link.short_description = 'date'
-
-    model = BackupLog
-    fields = ('date_link', 'storage', 'success', 'snapshot', 'date_begin', 'date_end')
-    max_num = 5
 
 
 class ExcludeListFilter(admin.SimpleListFilter):
@@ -111,7 +78,7 @@ class NameExcludeListFilter(ExcludeListFilter):
     parameter_name = 'name'
 
 
-class MachineAdmin(admin.ModelAdmin):
+class MachineAdmin(CustomModelAdmin):
     def storage_link(self, obj):
         return get_admin_change_link(obj.storage)
 
@@ -120,14 +87,13 @@ class MachineAdmin(admin.ModelAdmin):
     storage_link.short_description = 'storage'
 
     form = MachineAdminForm
-    inlines = (SourceInline,)
     list_display = ('unit_name', 'uuid', 'storage_link', 'environment_name', 'service_name', 'date_checked_in', 'active', 'healthy')
     list_display_links = ('unit_name',)
     list_filter = ('date_checked_in', 'storage', 'active')
     ordering = ('unit_name',)
 
 
-class SourceAdmin(admin.ModelAdmin):
+class SourceAdmin(CustomModelAdmin):
     def machine_link(self, obj):
         return get_admin_change_link(obj.machine)
 
@@ -135,15 +101,13 @@ class SourceAdmin(admin.ModelAdmin):
     machine_link.admin_order_field = 'machine__unit_name'
     machine_link.short_description = 'machine'
 
-    # max_num=5 isn't working for some reason, making this unweildy
-    #inlines = (BackupLogInline,)
     list_display = ('name', 'machine_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active', 'healthy')
     list_display_links = ('name',)
     list_filter = ('date_last_backed_up', 'date_next_backup', 'active', 'published', NameExcludeListFilter)
     ordering = ('machine__unit_name', 'name')
 
 
-class BackupLogAdmin(admin.ModelAdmin):
+class BackupLogAdmin(CustomModelAdmin):
     def source_link(self, obj):
         return get_admin_change_link(obj.source)
 
@@ -175,14 +139,13 @@ class BackupLogAdmin(admin.ModelAdmin):
     ordering = ('-date',)
 
 
-class FilterSetAdmin(admin.ModelAdmin):
+class FilterSetAdmin(CustomModelAdmin):
     list_display = ('name', 'date_added', 'active')
     ordering = ('name',)
 
 
-class StorageAdmin(admin.ModelAdmin):
+class StorageAdmin(CustomModelAdmin):
     form = StorageAdminForm
-    inlines = (MachineInline,)
     list_display = ('name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in', 'active', 'healthy')
     ordering = ('name',)
 

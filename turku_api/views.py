@@ -302,14 +302,11 @@ class ViewV1():
                 out.append(f)
         return out
 
-    def storage_ping_checkin(self):
-        self._storage_authenticate()
-        m = self._storage_get_machine()
-
-        scheduled_sources = []
+    def get_checkin_scheduled_sources(self, m):
+        scheduled_sources = {}
         now = timezone.now()
         for s in m.source_set.filter(date_next_backup__lte=now, active=True, published=True):
-            scheduled_sources.append({
+            scheduled_sources[s.name] = {
                 'name': s.name,
                 'path': s.path,
                 'username': s.username,
@@ -321,7 +318,43 @@ class ViewV1():
                 'large_rotating_files': s.large_rotating_files,
                 'large_modifying_files': s.large_modifying_files,
                 'snapshot_mode': s.snapshot_mode,
-            })
+            }
+        return scheduled_sources
+
+    def agent_ping_checkin(self):
+        if not (('machine' in self.req) and (type(self.req['machine']) == dict)):
+            raise HttpResponseException(HttpResponseBadRequest('"machine" dict required'))
+        req_machine = self.req['machine']
+
+        # Make sure these exist in the request
+        for k in ('uuid', 'secret'):
+            if k not in req_machine:
+                raise HttpResponseException(HttpResponseBadRequest('Missing required machine option "%s"' % k))
+
+        # Load the machine
+        try:
+            m = Machine.objects.get(uuid=req_machine['uuid'], active=True)
+        except Machine.DoesNotExist:
+            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+        if not hashers.check_password(req_machine['secret'], m.secret_hash):
+            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+
+        scheduled_sources = self.get_checkin_scheduled_sources(m)
+        now = timezone.now()
+
+        out = {
+            'scheduled_sources': scheduled_sources,
+        }
+        m.date_checked_in = now
+        m.save()
+        return HttpResponse(json.dumps(out), content_type='application/json')
+
+    def storage_ping_checkin(self):
+        self._storage_authenticate()
+        m = self._storage_get_machine()
+
+        scheduled_sources = self.get_checkin_scheduled_sources(m)
+        now = timezone.now()
 
         out = {
             'machine': {
@@ -468,6 +501,14 @@ def health(request):
 def update_config(request):
     try:
         return ViewV1(request).update_config()
+    except HttpResponseException as e:
+        return e.message
+
+
+@csrf_exempt
+def agent_ping_checkin(request):
+    try:
+        return ViewV1(request).agent_ping_checkin()
     except HttpResponseException as e:
         return e.message
 

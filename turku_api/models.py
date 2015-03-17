@@ -281,10 +281,12 @@ class Source(models.Model):
     )
     username = models.CharField(
         max_length=200,
+        blank=True, null=True,
         help_text='Machine-generated username (like a UUID) associated with this source, used by the storage unit to authenticate to the machine\'s rsync module.',
     )
     password = models.CharField(
         max_length=200,
+        blank=True, null=True,
         help_text='Machine-generated cleartext password associated with this source, used by the storage unit to authenticate to the machine\'s rsync module.',
     )
     filter = models.CharField(

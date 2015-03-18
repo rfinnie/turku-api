@@ -87,7 +87,10 @@ class MachineAdmin(CustomModelAdmin):
     storage_link.short_description = 'storage'
 
     form = MachineAdminForm
-    list_display = ('unit_name', 'uuid', 'storage_link', 'environment_name', 'service_name', 'date_checked_in', 'active', 'healthy')
+    list_display = (
+        'unit_name', 'uuid', 'storage_link', 'environment_name',
+        'service_name', 'date_checked_in', 'active', 'healthy',
+    )
     list_display_links = ('unit_name',)
     list_filter = ('date_checked_in', 'storage', 'active')
     ordering = ('unit_name',)
@@ -101,9 +104,15 @@ class SourceAdmin(CustomModelAdmin):
     machine_link.admin_order_field = 'machine__unit_name'
     machine_link.short_description = 'machine'
 
-    list_display = ('name', 'machine_link', 'path', 'date_last_backed_up', 'date_next_backup', 'published', 'active', 'healthy')
+    list_display = (
+        'name', 'machine_link', 'path', 'date_last_backed_up',
+        'date_next_backup', 'published', 'active', 'healthy',
+    )
     list_display_links = ('name',)
-    list_filter = ('date_last_backed_up', 'date_next_backup', 'active', 'published', NameExcludeListFilter)
+    list_filter = (
+        'date_last_backed_up', 'date_next_backup', 'active', 'published',
+        NameExcludeListFilter,
+    )
     ordering = ('machine__unit_name', 'name')
 
 
@@ -133,7 +142,10 @@ class BackupLogAdmin(CustomModelAdmin):
     storage_link.admin_order_field = 'storage__name'
     storage_link.short_description = 'storage'
 
-    list_display = ('date', 'source_link', 'success', 'snapshot', 'storage_link', 'duration')
+    list_display = (
+        'date', 'source_link', 'success', 'snapshot', 'storage_link',
+        'duration',
+    )
     list_display_links = ('date',)
     list_filter = ('date', 'success')
     ordering = ('-date',)
@@ -146,7 +158,10 @@ class FilterSetAdmin(CustomModelAdmin):
 
 class StorageAdmin(CustomModelAdmin):
     form = StorageAdminForm
-    list_display = ('name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in', 'active', 'healthy')
+    list_display = (
+        'name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in',
+        'active', 'healthy',
+    )
     ordering = ('name',)
 
 

@@ -1,4 +1,7 @@
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseNotFound, HttpResponseRedirect
+from django.http import (
+    HttpResponse, HttpResponseBadRequest, HttpResponseNotAllowed,
+    HttpResponseForbidden, HttpResponseNotFound,
+)
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -17,7 +20,11 @@ def frequency_next_scheduled(frequency, base_time=None):
     f = [x.strip() for x in frequency.split(',')]
 
     if f[0] == 'hourly':
-        target_time = (base_time.replace(minute=random.randint(0, 59), second=random.randint(0, 59), microsecond=0) + timedelta(hours=1))
+        target_time = (
+            base_time.replace(
+                minute=random.randint(0, 59), second=random.randint(0, 59), microsecond=0
+            ) + timedelta(hours=1)
+        )
         # Push it out 10 minutes if it falls within 10 minutes of now
         if target_time < (base_time + timedelta(minutes=10)):
             target_time = (target_time + timedelta(minutes=10))
@@ -138,7 +145,7 @@ class ViewV1():
         try:
             return Machine.objects.get(uuid=self.req['machine_uuid'], storage=self.storage, active=True)
         except Machine.DoesNotExist:
-            raise HttpResponseException(httpResponseNotFound('Machine not found'))
+            raise HttpResponseException(HttpResponseNotFound('Machine not found'))
 
     def update_config(self):
         # Check for global auth
@@ -225,7 +232,11 @@ class ViewV1():
             sources_in_db.append(s.name)
 
             modified = False
-            for k in ('path', 'username', 'password', 'frequency', 'retention', 'comment', 'shared_service', 'large_rotating_files', 'large_modifying_files'):
+            for k in (
+                'path', 'username', 'password', 'frequency', 'retention',
+                'comment', 'shared_service', 'large_rotating_files',
+                'large_modifying_files',
+            ):
                 if (k in req_sources[s.name]) and (getattr(s, k) != req_sources[s.name][k]):
                     setattr(s, k, req_sources[s.name][k])
                     if k == 'frequency':
@@ -255,7 +266,11 @@ class ViewV1():
             s.name = name
             s.machine = m
 
-            for k in ('path', 'username', 'password', 'frequency', 'retention', 'comment', 'shared_service', 'large_rotating_files', 'large_modifying_files'):
+            for k in (
+                'path', 'username', 'password', 'frequency', 'retention',
+                'comment', 'shared_service', 'large_rotating_files',
+                'large_modifying_files',
+            ):
                 if k not in req_sources[s.name]:
                     continue
                 setattr(s, k, req_sources[s.name][k])

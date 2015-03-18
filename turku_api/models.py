@@ -14,7 +14,7 @@ def new_uuid():
 
 def validate_uuid(value):
     try:
-        val = str(uuid.UUID(value))
+        str(uuid.UUID(value))
     except ValueError:
         raise ValidationError('Invalid UUID format')
 
@@ -83,7 +83,8 @@ class Auth(models.Model):
     )
     active = models.BooleanField(
         default=True,
-        help_text='Whether this auth is enabled.  Disabling prevents new registrations using its key, and prevents existing machines using its key from updating their configs.',
+        help_text='Whether this auth is enabled.  Disabling prevents new registrations using its key, and prevents ' +
+                  'existing machines using its key from updating their configs.',
     )
     date_added = models.DateTimeField(
         default=timezone.now,
@@ -156,7 +157,9 @@ class Storage(models.Model):
     )
     active = models.BooleanField(
         default=True,
-        help_text='Whether this storage unit is enabled.  Disabling prevents this storage unit from checking in or being assigned to new machines. Existing machines which ping this storage unit will get errors because this storage unit can no longer query the API server.',
+        help_text='Whether this storage unit is enabled.  Disabling prevents this storage unit from checking in or ' +
+                  'being assigned to new machines. Existing machines which ping this storage unit will get errors ' +
+                  'because this storage unit can no longer query the API server.',
     )
     date_registered = models.DateTimeField(
         default=timezone.now,
@@ -202,11 +205,13 @@ class Machine(models.Model):
     )
     service_name = models.CharField(
         max_length=200, blank=True, null=True,
-        help_text='Service this machine is part of.  For Juju units, this is the first part of the unit name (before the slash).',
+        help_text='Service this machine is part of.  For Juju units, this is the first part of the unit name ' +
+                  '(before the slash).',
     )
     unit_name = models.CharField(
         max_length=200,
-        help_text='Unit name of this machine.  For Juju units, this is the full unit name (e.g. "service-name/0").  Otherwise, this should be the machine\'s hostname.',
+        help_text='Unit name of this machine.  For Juju units, this is the full unit name (e.g. "service-name/0").  ' +
+                  'Otherwise, this should be the machine\'s hostname.',
     )
     comment = models.CharField(
         max_length=200, blank=True, null=True,
@@ -227,7 +232,8 @@ class Machine(models.Model):
     )
     active = models.BooleanField(
         default=True,
-        help_text='Whether this machine is enabled.  Disabling removes its key from its storage unit, stops this machine from updating its registration, etc.',
+        help_text='Whether this machine is enabled.  Disabling removes its key from its storage unit, stops this ' +
+                  'machine from updating its registration, etc.',
     )
     date_registered = models.DateTimeField(
         default=timezone.now,
@@ -282,12 +288,14 @@ class Source(models.Model):
     username = models.CharField(
         max_length=200,
         blank=True, null=True,
-        help_text='Machine-generated username (like a UUID) associated with this source, used by the storage unit to authenticate to the machine\'s rsync module.',
+        help_text='Machine-generated username (like a UUID) associated with this source, used by the storage unit ' +
+                  'to authenticate to the machine\'s rsync module.',
     )
     password = models.CharField(
         max_length=200,
         blank=True, null=True,
-        help_text='Machine-generated cleartext password associated with this source, used by the storage unit to authenticate to the machine\'s rsync module.',
+        help_text='Machine-generated cleartext password associated with this source, used by the storage unit to ' +
+                  'authenticate to the machine\'s rsync module.',
     )
     filter = models.CharField(
         max_length=2048, default='[]', validators=[validate_json_string_list],
@@ -316,15 +324,18 @@ class Source(models.Model):
     )
     large_rotating_files = models.BooleanField(
         default=False,
-        help_text='Whether this source contains a number of large files which rotate through filenames, e.g. "postgresql.1.dump.gz" becomes "postgresql.2.dump.gz".',
+        help_text='Whether this source contains a number of large files which rotate through filenames, e.g. ' +
+                  '"postgresql.1.dump.gz" becomes "postgresql.2.dump.gz".',
     )
     large_modifying_files = models.BooleanField(
         default=False,
-        help_text='Whether this source contains a number of large files which grow or are otherwise modified, e.g. log files or filesystem images.',
+        help_text='Whether this source contains a number of large files which grow or are otherwise modified, ' +
+                  'e.g. log files or filesystem images.',
     )
     active = models.BooleanField(
         default=True,
-        help_text='Whether this source is enabled.  Disabling means the API server no longer gives it to the storage unit, even if it\'s time for a backup.',
+        help_text='Whether this source is enabled.  Disabling means the API server no longer gives it to the ' +
+                  'storage unit, even if it\'s time for a backup.',
     )
     success = models.BooleanField(
         default=True,
@@ -348,7 +359,8 @@ class Source(models.Model):
     )
     date_next_backup = models.DateTimeField(
         default=timezone.now,
-        help_text='Date/time this source is next scheduled to be backed up.  Set to now (or in the past) to trigger a backup as soon as possible.',
+        help_text='Date/time this source is next scheduled to be backed up.  Set to now (or in the past) to ' +
+                  'trigger a backup as soon as possible.',
     )
 
     class Meta:

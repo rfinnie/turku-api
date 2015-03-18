@@ -259,13 +259,14 @@ class ViewV1():
                 if k not in req_sources[s.name]:
                     continue
                 setattr(s, k, req_sources[s.name][k])
-                if k == 'frequency':
-                    s.date_next_backup = frequency_next_scheduled(req_sources[s.name][k])
             for k in ('filter', 'exclude'):
                 if k not in req_sources[s.name]:
                     continue
                 v = json.dumps(req_sources[s.name][k], sort_keys=True)
                 setattr(s, k, v)
+
+            # New source, so schedule it regardless
+            s.date_next_backup = frequency_next_scheduled(s.frequency)
 
             try:
                 s.full_clean()

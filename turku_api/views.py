@@ -325,8 +325,6 @@ class ViewV1():
             scheduled_sources[s.name] = {
                 'name': s.name,
                 'path': s.path,
-                'username': s.username,
-                'password': s.password,
                 'retention': s.retention,
                 'filter': self.build_filters(json.loads(s.filter)),
                 'exclude': json.loads(s.exclude),

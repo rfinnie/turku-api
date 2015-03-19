@@ -157,10 +157,30 @@ class FilterSetAdmin(CustomModelAdmin):
 
 
 class StorageAdmin(CustomModelAdmin):
+    def human_si(self, v, begin=0):
+        p = ('', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi')
+        i = begin
+        while v >= 1024.0:
+            v = int(v / 10.24) / 100.0
+            i += 1
+        return '%g %sB' % (v, p[i])
+
+    def space_total_human(self, obj):
+        return self.human_si(obj.space_total, 2)
+
+    space_total_human.admin_order_field = 'space_total'
+    space_total_human.short_description = 'space total'
+
+    def space_available_human(self, obj):
+        return self.human_si(obj.space_available, 2)
+
+    space_available_human.admin_order_field = 'space_available'
+    space_available_human.short_description = 'space available'
+
     form = StorageAdminForm
     list_display = (
         'name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in',
-        'active', 'healthy',
+        'space_total_human', 'space_available_human', 'active', 'healthy',
     )
     ordering = ('name',)
 

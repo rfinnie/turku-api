@@ -235,7 +235,7 @@ class ViewV1():
             for k in (
                 'path', 'username', 'password', 'frequency', 'retention',
                 'comment', 'shared_service', 'large_rotating_files',
-                'large_modifying_files',
+                'large_modifying_files', 'bwlimit',
             ):
                 if (k in req_sources[s.name]) and (getattr(s, k) != req_sources[s.name][k]):
                     setattr(s, k, req_sources[s.name][k])
@@ -269,7 +269,7 @@ class ViewV1():
             for k in (
                 'path', 'username', 'password', 'frequency', 'retention',
                 'comment', 'shared_service', 'large_rotating_files',
-                'large_modifying_files',
+                'large_modifying_files', 'bwlimit',
             ):
                 if k not in req_sources[s.name]:
                     continue
@@ -326,6 +326,7 @@ class ViewV1():
                 'name': s.name,
                 'path': s.path,
                 'retention': s.retention,
+                'bwlimit': s.bwlimit,
                 'filter': self.build_filters(json.loads(s.filter)),
                 'exclude': json.loads(s.exclude),
                 'shared_service': s.shared_service,

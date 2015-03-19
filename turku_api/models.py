@@ -313,6 +313,12 @@ class Source(models.Model):
         max_length=200, default='last 5 days, earliest of month',
         help_text='Retention schedule, describing when to preserve snapshots.',
     )
+    bwlimit = models.CharField(
+        max_length=200,
+        blank=True, null=True,
+        verbose_name='bandwidth limit',
+        help_text='Bandwith limit for remote transfer, using the rsync --bwlimit format.',
+    )
     snapshot_mode = models.CharField(
         blank=True, null=True,
         max_length=200, choices=SNAPSHOT_MODES,

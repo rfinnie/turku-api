@@ -285,18 +285,6 @@ class Source(models.Model):
         max_length=200,
         help_text='Full filesystem path of this source.',
     )
-    username = models.CharField(
-        max_length=200,
-        blank=True, null=True,
-        help_text='Machine-generated username (like a UUID) associated with this source, used by the storage unit ' +
-                  'to authenticate to the machine\'s rsync module.',
-    )
-    password = models.CharField(
-        max_length=200,
-        blank=True, null=True,
-        help_text='Machine-generated cleartext password associated with this source, used by the storage unit to ' +
-                  'authenticate to the machine\'s rsync module.',
-    )
     filter = models.CharField(
         max_length=2048, default='[]', validators=[validate_json_string_list],
         help_text='JSON list of rsync-compatible --filter options.',

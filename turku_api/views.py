@@ -233,7 +233,7 @@ class ViewV1():
 
             modified = False
             for k in (
-                'path', 'username', 'password', 'frequency', 'retention',
+                'path', 'frequency', 'retention',
                 'comment', 'shared_service', 'large_rotating_files',
                 'large_modifying_files', 'bwlimit',
             ):
@@ -267,7 +267,7 @@ class ViewV1():
             s.machine = m
 
             for k in (
-                'path', 'username', 'password', 'frequency', 'retention',
+                'path', 'frequency', 'retention',
                 'comment', 'shared_service', 'large_rotating_files',
                 'large_modifying_files', 'bwlimit',
             ):

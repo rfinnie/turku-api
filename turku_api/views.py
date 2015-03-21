@@ -147,14 +147,27 @@ class ViewV1():
         except Machine.DoesNotExist:
             raise HttpResponseException(HttpResponseNotFound('Machine not found'))
 
-    def update_config(self):
+    def get_registration_auth(self, secret_type):
         # Check for global auth
-        if 'auth' not in self.req:
+        if ('auth_name' in self.req) and ('auth_secret' in self.req):
+            try:
+                a = Auth.objects.get(name=self.req['auth_name'], secret_type=secret_type, active=True)
+            except Auth.DoesNotExist:
+                raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+            if hashers.check_password(self.req['auth_secret'], a.secret_hash):
+                return a
             raise HttpResponseException(HttpResponseForbidden('Bad auth'))
-        try:
-            a = Auth.objects.get(secret=self.req['auth'], secret_type='machine_reg', active=True)
-        except Auth.DoesNotExist:
+        elif 'auth' in self.req:
+            # XXX inefficient but temporary (legacy)
+            for a in Auth.objects.filter(secret_type=secret_type, active=True):
+                if hashers.check_password(self.req['auth'], a.secret_hash):
+                    return a
             raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+        else:
+            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+
+    def update_config(self):
+        a = self.get_registration_auth('machine_reg')
 
         if not (('machine' in self.req) and (type(self.req['machine']) == dict)):
             raise HttpResponseException(HttpResponseBadRequest('"machine" dict required'))
@@ -196,7 +209,7 @@ class ViewV1():
             raise HttpResponseException(HttpResponseForbidden('Bad secret for existing machine'))
 
         # If the registration secret changed, update it
-        if m.auth.secret != a.secret:
+        if m.auth != a:
             m.auth = a
             modified = True
 
@@ -417,13 +430,7 @@ class ViewV1():
         return HttpResponse(json.dumps({}), content_type='application/json')
 
     def storage_update_config(self):
-        # Check for global auth
-        if 'auth' not in self.req:
-            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
-        try:
-            a = Auth.objects.get(secret=self.req['auth'], secret_type='storage_reg', active=True)
-        except Auth.DoesNotExist:
-            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+        a = self.get_registration_auth('storage_reg')
 
         if not (('storage' in self.req) and (type(self.req['storage']) == dict)):
             raise HttpResponseException(HttpResponseBadRequest('"storage" dict required'))
@@ -450,7 +457,7 @@ class ViewV1():
             raise HttpResponseException(HttpResponseForbidden('Bad secret for existing storage'))
 
         # If the registration secret changed, update it
-        if self.storage.auth.secret != a.secret:
+        if self.storage.auth != a:
             self.storage.auth = a
             modified = True
 

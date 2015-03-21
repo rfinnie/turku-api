@@ -66,12 +66,12 @@ class Auth(models.Model):
     )
     id = UuidPrimaryKeyField()
     name = models.CharField(
-        max_length=200,
+        max_length=200, unique=True,
         help_text='Human-readable name of this auth.',
     )
-    secret = models.CharField(
+    secret_hash = models.CharField(
         max_length=200,
-        help_text='Cleartext auth secret.',
+        help_text='Hashed secret (password) of this auth.',
     )
     secret_type = models.CharField(
         max_length=200, choices=SECRET_TYPES,
@@ -90,9 +90,6 @@ class Auth(models.Model):
         default=timezone.now,
         help_text='Date/time this auth was added.',
     )
-
-    class Meta:
-        unique_together = (('secret', 'secret_type'),)
 
     def __unicode__(self):
         return self.name

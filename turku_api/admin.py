@@ -51,7 +51,7 @@ class StorageAdminForm(forms.ModelForm):
 
 
 class AuthAdmin(CustomModelAdmin):
-    list_display = ('name', 'secret', 'secret_type', 'active')
+    list_display = ('name', 'secret_type', 'date_added', 'active')
     ordering = ('name',)
 
 

@@ -336,7 +336,6 @@ class ViewV1():
         now = timezone.now()
         for s in m.source_set.filter(date_next_backup__lte=now, active=True, published=True):
             scheduled_sources[s.name] = {
-                'name': s.name,
                 'path': s.path,
                 'retention': s.retention,
                 'bwlimit': s.bwlimit,
@@ -346,6 +345,13 @@ class ViewV1():
                 'large_rotating_files': s.large_rotating_files,
                 'large_modifying_files': s.large_modifying_files,
                 'snapshot_mode': s.snapshot_mode,
+                'storage': {
+                    'name': s.machine.storage.name,
+                    'ssh_ping_host': s.machine.storage.ssh_ping_host,
+                    'ssh_ping_host_keys': json.loads(s.machine.storage.ssh_ping_host_keys),
+                    'ssh_ping_port': s.machine.storage.ssh_ping_port,
+                    'ssh_ping_user': s.machine.storage.ssh_ping_user,
+                }
             }
         return scheduled_sources
 
@@ -375,6 +381,50 @@ class ViewV1():
         }
         m.date_checked_in = now
         m.save()
+        return HttpResponse(json.dumps(out), content_type='application/json')
+
+    def agent_ping_restore(self):
+        if not (('machine' in self.req) and (type(self.req['machine']) == dict)):
+            raise HttpResponseException(HttpResponseBadRequest('"machine" dict required'))
+        req_machine = self.req['machine']
+
+        # Make sure these exist in the request
+        for k in ('uuid', 'secret'):
+            if k not in req_machine:
+                raise HttpResponseException(HttpResponseBadRequest('Missing required machine option "%s"' % k))
+
+        # Load the machine
+        try:
+            m = Machine.objects.get(uuid=req_machine['uuid'], active=True)
+        except Machine.DoesNotExist:
+            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+        if not hashers.check_password(req_machine['secret'], m.secret_hash):
+            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+
+        sources = {}
+        for s in m.source_set.filter(active=True, published=True):
+            sources[s.name] = {
+                'path': s.path,
+                'retention': s.retention,
+                'bwlimit': s.bwlimit,
+                'filter': self.build_filters(json.loads(s.filter)),
+                'exclude': json.loads(s.exclude),
+                'shared_service': s.shared_service,
+                'large_rotating_files': s.large_rotating_files,
+                'large_modifying_files': s.large_modifying_files,
+                'snapshot_mode': s.snapshot_mode,
+                'storage': {
+                    'name': s.machine.storage.name,
+                    'ssh_ping_host': s.machine.storage.ssh_ping_host,
+                    'ssh_ping_host_keys': json.loads(s.machine.storage.ssh_ping_host_keys),
+                    'ssh_ping_port': s.machine.storage.ssh_ping_port,
+                    'ssh_ping_user': s.machine.storage.ssh_ping_user,
+                }
+            }
+
+        out = {
+            'sources': sources,
+        }
         return HttpResponse(json.dumps(out), content_type='application/json')
 
     def storage_ping_checkin(self):
@@ -531,6 +581,14 @@ def update_config(request):
 def agent_ping_checkin(request):
     try:
         return ViewV1(request).agent_ping_checkin()
+    except HttpResponseException as e:
+        return e.message
+
+
+@csrf_exempt
+def agent_ping_restore(request):
+    try:
+        return ViewV1(request).agent_ping_restore()
     except HttpResponseException as e:
         return e.message
 

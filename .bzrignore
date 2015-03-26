@@ -1,2 +1,4 @@
 *.pyc
 db.sqlite3
+turku_api/local_settings.py
+turku_api/local_urls.py

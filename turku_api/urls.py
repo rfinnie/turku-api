@@ -19,3 +19,8 @@ urlpatterns = patterns(
     url(r'^v1/storage_update_config$', views.storage_update_config, name='storage_update_config'),
     url(r'^admin/', include(admin.site.urls)),
 )
+
+try:
+    from local_urls import *
+except ImportError:
+    pass

@@ -44,11 +44,3 @@ try:
     from local_settings import *
 except ImportError:
     pass
-try:
-    from database_settings import *
-except ImportError:
-    pass
-try:
-    from secret_settings import *
-except ImportError:
-    pass

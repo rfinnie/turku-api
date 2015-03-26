@@ -248,7 +248,7 @@ class ViewV1():
             for k in (
                 'path', 'frequency', 'retention',
                 'comment', 'shared_service', 'large_rotating_files',
-                'large_modifying_files', 'bwlimit',
+                'large_modifying_files', 'bwlimit', 'snapshot_mode',
             ):
                 if (k in req_sources[s.name]) and (getattr(s, k) != req_sources[s.name][k]):
                     setattr(s, k, req_sources[s.name][k])
@@ -282,7 +282,7 @@ class ViewV1():
             for k in (
                 'path', 'frequency', 'retention',
                 'comment', 'shared_service', 'large_rotating_files',
-                'large_modifying_files', 'bwlimit',
+                'large_modifying_files', 'bwlimit', 'snapshot_mode',
             ):
                 if k not in req_sources[s.name]:
                     continue

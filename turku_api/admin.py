@@ -53,6 +53,7 @@ class StorageAdminForm(forms.ModelForm):
 class AuthAdmin(CustomModelAdmin):
     list_display = ('name', 'secret_type', 'date_added', 'active')
     ordering = ('name',)
+    search_fields = ('name', 'comment',)
 
 
 class ExcludeListFilter(admin.SimpleListFilter):
@@ -94,6 +95,10 @@ class MachineAdmin(CustomModelAdmin):
     list_display_links = ('unit_name',)
     list_filter = ('date_checked_in', 'storage', 'active')
     ordering = ('unit_name',)
+    search_fields = (
+        'unit_name', 'uuid', 'environment_name', 'service_name',
+        'comment',
+    )
 
 
 class SourceAdmin(CustomModelAdmin):
@@ -114,6 +119,7 @@ class SourceAdmin(CustomModelAdmin):
         NameExcludeListFilter,
     )
     ordering = ('machine__unit_name', 'name')
+    search_fields = ('name', 'comment', 'path',)
 
 
 class BackupLogAdmin(CustomModelAdmin):
@@ -154,6 +160,7 @@ class BackupLogAdmin(CustomModelAdmin):
 class FilterSetAdmin(CustomModelAdmin):
     list_display = ('name', 'date_added', 'active')
     ordering = ('name',)
+    search_fields = ('name', 'comment',)
 
 
 class StorageAdmin(CustomModelAdmin):
@@ -183,6 +190,7 @@ class StorageAdmin(CustomModelAdmin):
         'space_total_human', 'space_available_human', 'active', 'healthy',
     )
     ordering = ('name',)
+    search_fields = ('name', 'comment', 'ssh_ping_host',)
 
 
 admin.site.register(Auth, AuthAdmin)

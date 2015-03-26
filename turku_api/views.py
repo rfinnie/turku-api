@@ -167,8 +167,6 @@ class ViewV1():
             raise HttpResponseException(HttpResponseForbidden('Bad auth'))
 
     def update_config(self):
-        a = self.get_registration_auth('machine_reg')
-
         if not (('machine' in self.req) and (type(self.req['machine']) == dict)):
             raise HttpResponseException(HttpResponseBadRequest('"machine" dict required'))
         req_machine = self.req['machine']
@@ -185,8 +183,13 @@ class ViewV1():
         except Machine.DoesNotExist:
             m = Machine(uuid=req_machine['uuid'])
             m.secret_hash = hashers.make_password(req_machine['secret'])
-            m.auth = a
+            m.auth = self.get_registration_auth('machine_reg')
             modified = True
+
+        # If the machine existed before, it had a secret.  Make sure that
+        # hasn't changed.
+        if not hashers.check_password(req_machine['secret'], m.secret_hash):
+            raise HttpResponseException(HttpResponseForbidden('Bad secret for existing machine'))
 
         new_storage_needed = False
         try:
@@ -202,16 +205,6 @@ class ViewV1():
                 modified = True
             except IndexError:
                 raise HttpResponseException(HttpResponseNotFound('No storages are currently available'))
-
-        # If the machine existed before, it had a secret.  Make sure that
-        # hasn't changed.
-        if not hashers.check_password(req_machine['secret'], m.secret_hash):
-            raise HttpResponseException(HttpResponseForbidden('Bad secret for existing machine'))
-
-        # If the registration secret changed, update it
-        if m.auth != a:
-            m.auth = a
-            modified = True
 
         # If any of these exist in the request, add or update them in the
         # machine.
@@ -480,8 +473,6 @@ class ViewV1():
         return HttpResponse(json.dumps({}), content_type='application/json')
 
     def storage_update_config(self):
-        a = self.get_registration_auth('storage_reg')
-
         if not (('storage' in self.req) and (type(self.req['storage']) == dict)):
             raise HttpResponseException(HttpResponseBadRequest('"storage" dict required'))
         req_storage = self.req['storage']
@@ -498,18 +489,13 @@ class ViewV1():
         except Storage.DoesNotExist:
             self.storage = Storage(name=req_storage['name'])
             self.storage.secret_hash = hashers.make_password(req_storage['secret'])
-            self.storage.auth = a
+            self.storage.auth = self.get_registration_auth('storage_reg')
             modified = True
 
         # If the storage existed before, it had a secret.  Make sure that
         # hasn't changed.
         if not hashers.check_password(req_storage['secret'], self.storage.secret_hash):
             raise HttpResponseException(HttpResponseForbidden('Bad secret for existing storage'))
-
-        # If the registration secret changed, update it
-        if self.storage.auth != a:
-            self.storage.auth = a
-            modified = True
 
         # If any of these exist in the request, add or update them in the
         # self.storage.

@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {% trans 'Turku admin' %}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">{% trans 'Turku backups administration' %}</h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block footer %}<div id="footer"><a href="https://launchpad.net/turku">{% trans 'Turku backups' %}</a></div>{% endblock %}

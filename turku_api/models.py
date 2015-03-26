@@ -358,7 +358,7 @@ class Source(models.Model):
         unique_together = (('machine', 'name'),)
 
     def __unicode__(self):
-        return '%s %s (%s)' % (self.machine.unit_name, self.name, self.path)
+        return '%s %s' % (self.machine.unit_name, self.name)
 
 
 class BackupLog(models.Model):
@@ -396,6 +396,9 @@ class BackupLog(models.Model):
         help_text='Summary of the backup\'s events.',
     )
 
+    def __unicode__(self):
+        return '%s %s' % (str(self.source), self.date.strftime('%Y-%m-%d %H:%M:%S'))
+
 
 class FilterSet(models.Model):
     id = UuidPrimaryKeyField()
@@ -419,6 +422,9 @@ class FilterSet(models.Model):
         default=timezone.now,
         help_text='Date/time this filter set was added.',
     )
+
+    def __unicode__(self):
+        return self.name
 
 
 add_introspection_rules([], ["^turku_api\.models\.UuidPrimaryKeyField"])

@@ -125,46 +125,50 @@ class ViewV1():
 
     def _storage_authenticate(self):
         # Check for storage auth
+        if 'storage' not in self.req:
+            raise HttpResponseException(HttpResponseBadRequest('Missing required option "storage"'))
         for k in ('name', 'secret'):
-            if k not in self.req:
+            if k not in self.req['storage']:
                 raise HttpResponseException(HttpResponseForbidden('Bad auth'))
         try:
-            self.storage = Storage.objects.get(name=self.req['name'], active=True)
+            self.storage = Storage.objects.get(name=self.req['storage']['name'], active=True)
         except Storage.DoesNotExist:
             raise HttpResponseException(HttpResponseForbidden('Bad auth'))
-        if not hashers.check_password(self.req['secret'], self.storage.secret_hash):
+        if not hashers.check_password(self.req['storage']['secret'], self.storage.secret_hash):
             raise HttpResponseException(HttpResponseForbidden('Bad auth'))
 
     def _storage_get_machine(self):
         # Make sure these exist in the request
-        for k in ('machine_uuid',):
-            if k not in self.req:
-                raise HttpResponseException(HttpResponseBadRequest('Missing required option "%s"' % k))
+        if 'machine' not in self.req:
+            raise HttpResponseException(HttpResponseBadRequest('Missing required option "machine"'))
+        if 'uuid' not in self.req['machine']:
+            raise HttpResponseException(HttpResponseBadRequest('Missing required option "machine.uuid"'))
 
         # Create or load the machine
         try:
-            return Machine.objects.get(uuid=self.req['machine_uuid'], storage=self.storage, active=True)
+            return Machine.objects.get(uuid=self.req['machine']['uuid'], storage=self.storage, active=True)
         except Machine.DoesNotExist:
             raise HttpResponseException(HttpResponseNotFound('Machine not found'))
 
     def get_registration_auth(self, secret_type):
         # Check for global auth
-        if ('auth_name' in self.req) and ('auth_secret' in self.req):
+        if 'auth' not in self.req:
+            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+        if type(self.req['auth']) == dict:
+            if not (('name' in self.req['auth']) and ('secret' in self.req['auth'])):
+                raise HttpResponseException(HttpResponseForbidden('Bad auth'))
             try:
-                a = Auth.objects.get(name=self.req['auth_name'], secret_type=secret_type, active=True)
+                a = Auth.objects.get(name=self.req['auth']['name'], secret_type=secret_type, active=True)
             except Auth.DoesNotExist:
                 raise HttpResponseException(HttpResponseForbidden('Bad auth'))
-            if hashers.check_password(self.req['auth_secret'], a.secret_hash):
+            if hashers.check_password(self.req['auth']['secret'], a.secret_hash):
                 return a
-            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
-        elif 'auth' in self.req:
+        else:
             # XXX inefficient but temporary (legacy)
             for a in Auth.objects.filter(secret_type=secret_type, active=True):
                 if hashers.check_password(self.req['auth'], a.secret_hash):
                     return a
-            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
-        else:
-            raise HttpResponseException(HttpResponseForbidden('Bad auth'))
+        raise HttpResponseException(HttpResponseForbidden('Bad auth'))
 
     def update_config(self):
         if not (('machine' in self.req) and (type(self.req['machine']) == dict)):
@@ -222,7 +226,12 @@ class ViewV1():
                 raise HttpResponseException(HttpResponseBadRequest('Validation error: %s' % str(e)))
             m.save()
 
-        if 'sources' in self.req:
+        if 'sources' in req_machine:
+            req_sources = req_machine['sources']
+            if not type(req_sources) == dict:
+                raise HttpResponseException(HttpResponseBadRequest('Invalid type for "sources"'))
+        elif 'sources' in self.req:
+            # XXX legacy
             req_sources = self.req['sources']
             if not type(req_sources) == dict:
                 raise HttpResponseException(HttpResponseBadRequest('Invalid type for "sources"'))
@@ -370,8 +379,14 @@ class ViewV1():
         now = timezone.now()
 
         out = {
-            'scheduled_sources': scheduled_sources,
+            'machine': {
+                'scheduled_sources': scheduled_sources,
+            },
         }
+
+        # XXX legacy
+        out['scheduled_sources'] = scheduled_sources
+
         m.date_checked_in = now
         m.save()
         return HttpResponse(json.dumps(out), content_type='application/json')
@@ -416,8 +431,11 @@ class ViewV1():
             }
 
         out = {
-            'sources': sources,
+            'machine': {
+                'sources': sources,
+            },
         }
+
         return HttpResponse(json.dumps(out), content_type='application/json')
 
     def storage_ping_checkin(self):
@@ -433,8 +451,8 @@ class ViewV1():
                 'environment_name': m.environment_name,
                 'service_name': m.service_name,
                 'unit_name': m.unit_name,
+                'scheduled_sources': scheduled_sources,
             },
-            'scheduled_sources': scheduled_sources,
         }
         m.date_checked_in = now
         m.save()
@@ -444,32 +462,35 @@ class ViewV1():
         self._storage_authenticate()
         m = self._storage_get_machine()
 
-        try:
-            s = m.source_set.get(name=self.req['source_name'], active=True, published=True)
-        except Source.DoesNotExist:
-            raise HttpResponseException(HttpResponseNotFound('Source not found'))
-        now = timezone.now()
-        is_success = ('success' in self.req and self.req['success'])
-        s.success = is_success
-        if is_success:
-            s.date_last_backed_up = now
-            s.date_next_backup = frequency_next_scheduled(s.frequency, now)
-        s.save()
-        bl = BackupLog()
-        bl.source = s
-        bl.date = now
-        bl.storage = self.storage
-        bl.success = is_success
-        if 'backup_data' in self.req:
-            if 'snapshot' in self.req['backup_data']:
-                bl.snapshot = self.req['backup_data']['snapshot']
-            if 'summary' in self.req['backup_data']:
-                bl.summary = self.req['backup_data']['summary']
-            if 'time_begin' in self.req['backup_data']:
-                bl.date_begin = timezone.make_aware(datetime.utcfromtimestamp(self.req['backup_data']['time_begin']), timezone.utc)
-            if 'time_end' in self.req['backup_data']:
-                bl.date_end = timezone.make_aware(datetime.utcfromtimestamp(self.req['backup_data']['time_end']), timezone.utc)
-        bl.save()
+        if 'sources' not in self.req['machine']:
+            raise HttpResponseException(HttpResponseBadRequest('Missing required option "machine.sources"'))
+        for source_name in self.req['machine']['sources']:
+            source_data = self.req['machine']['sources'][source_name]
+            try:
+                s = m.source_set.get(name=source_name, active=True, published=True)
+            except Source.DoesNotExist:
+                raise HttpResponseException(HttpResponseNotFound('Source not found'))
+            now = timezone.now()
+            is_success = ('success' in source_data and source_data['success'])
+            s.success = is_success
+            if is_success:
+                s.date_last_backed_up = now
+                s.date_next_backup = frequency_next_scheduled(s.frequency, now)
+            s.save()
+            bl = BackupLog()
+            bl.source = s
+            bl.date = now
+            bl.storage = self.storage
+            bl.success = is_success
+            if 'snapshot' in source_data:
+                bl.snapshot = source_data['snapshot']
+            if 'summary' in source_data:
+                bl.summary = source_data['summary']
+            if 'time_begin' in source_data:
+                bl.date_begin = timezone.make_aware(datetime.utcfromtimestamp(source_data['time_begin']), timezone.utc)
+            if 'time_end' in source_data:
+                bl.date_end = timezone.make_aware(datetime.utcfromtimestamp(source_data['time_end']), timezone.utc)
+            bl.save()
         return HttpResponse(json.dumps({}), content_type='application/json')
 
     def storage_update_config(self):

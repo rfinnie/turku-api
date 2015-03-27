@@ -32,19 +32,19 @@ sources_total = 0
 sources_sick = 0
 sick_objects = []
 
-for storage in Storage.objects.filter(active=True):
+for storage in Storage.objects.filter(active=True, published=True):
     storages_total += 1
     if not storage.healthy():
         storages_sick += 1
         sick_objects.append(repr(storage))
 
-for machine in Machine.objects.filter(active=True):
+for machine in Machine.objects.filter(active=True, published=True):
     machines_total += 1
     if not machine.healthy():
         machines_sick += 1
         sick_objects.append(repr(machine))
 
-for source in Source.objects.filter(active=True, published=True):
+for source in Source.objects.filter(machine__active=True, machine__published=True, active=True, published=True):
     sources_total += 1
     if not source.healthy():
         sources_sick += 1

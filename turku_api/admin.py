@@ -90,10 +90,11 @@ class MachineAdmin(CustomModelAdmin):
     form = MachineAdminForm
     list_display = (
         'unit_name', 'uuid', 'storage_link', 'environment_name',
-        'service_name', 'date_checked_in', 'active', 'healthy',
+        'service_name', 'date_checked_in', 'published', 'active',
+        'healthy',
     )
     list_display_links = ('unit_name',)
-    list_filter = ('date_checked_in', 'storage', 'active')
+    list_filter = ('date_checked_in', 'storage', 'active', 'published')
     ordering = ('unit_name',)
     search_fields = (
         'unit_name', 'uuid', 'environment_name', 'service_name',
@@ -187,7 +188,8 @@ class StorageAdmin(CustomModelAdmin):
     form = StorageAdminForm
     list_display = (
         'name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in',
-        'space_total_human', 'space_available_human', 'active', 'healthy',
+        'space_total_human', 'space_available_human', 'published', 'active',
+        'healthy',
     )
     ordering = ('name',)
     search_fields = ('name', 'comment', 'ssh_ping_host',)

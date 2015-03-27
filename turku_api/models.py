@@ -158,6 +158,10 @@ class Storage(models.Model):
                   'being assigned to new machines. Existing machines which ping this storage unit will get errors ' +
                   'because this storage unit can no longer query the API server.',
     )
+    published = models.BooleanField(
+        default=True,
+        help_text='Whether this storage unit has been enabled by itself.',
+    )
     date_registered = models.DateTimeField(
         default=timezone.now,
         help_text='Date/time this storage unit was registered.',
@@ -231,6 +235,10 @@ class Machine(models.Model):
         default=True,
         help_text='Whether this machine is enabled.  Disabling removes its key from its storage unit, stops this ' +
                   'machine from updating its registration, etc.',
+    )
+    published = models.BooleanField(
+        default=True,
+        help_text='Whether this machine has been enabled by the machine agent.',
     )
     date_registered = models.DateTimeField(
         default=timezone.now,

@@ -146,7 +146,7 @@ class ViewV1():
 
         # Create or load the machine
         try:
-            return Machine.objects.get(uuid=self.req['machine']['uuid'], storage=self.storage, active=True)
+            return Machine.objects.get(uuid=self.req['machine']['uuid'], storage=self.storage, active=True, published=True)
         except Machine.DoesNotExist:
             raise HttpResponseException(HttpResponseNotFound('Machine not found'))
 
@@ -195,6 +195,17 @@ class ViewV1():
         if not hashers.check_password(req_machine['secret'], m.secret_hash):
             raise HttpResponseException(HttpResponseForbidden('Bad secret for existing machine'))
 
+        # Change the machine published status if needed
+        if ('published' in req_machine):
+            if req_machine['published'] != m.published:
+                m.published = req_machine['published']
+                modified = True
+        else:
+            # If not present, default to want published
+            if not m.published:
+                m.published = True
+                modified = True
+
         new_storage_needed = False
         try:
             m.storage
@@ -203,7 +214,7 @@ class ViewV1():
         if new_storage_needed:
             try:
                 weights = {}
-                for storage in Storage.objects.filter(active=True):
+                for storage in Storage.objects.filter(active=True, published=True):
                     weights[storage] = storage.space_available
                 m.storage = random_weighted(weights)
                 modified = True
@@ -304,6 +315,7 @@ class ViewV1():
                 raise HttpResponseException(HttpResponseBadRequest('Validation error: %s' % str(e)))
             s.save()
 
+        # XXX legacy
         out = {
             'storage_name': m.storage.name,
             'ssh_ping_host': m.storage.ssh_ping_host,
@@ -369,7 +381,7 @@ class ViewV1():
 
         # Load the machine
         try:
-            m = Machine.objects.get(uuid=req_machine['uuid'], active=True)
+            m = Machine.objects.get(uuid=req_machine['uuid'], active=True, published=True)
         except Machine.DoesNotExist:
             raise HttpResponseException(HttpResponseForbidden('Bad auth'))
         if not hashers.check_password(req_machine['secret'], m.secret_hash):
@@ -410,7 +422,7 @@ class ViewV1():
             raise HttpResponseException(HttpResponseForbidden('Bad auth'))
 
         sources = {}
-        for s in m.source_set.filter(active=True, published=True):
+        for s in m.source_set.filter(active=True):
             sources[s.name] = {
                 'path': s.path,
                 'retention': s.retention,
@@ -518,6 +530,17 @@ class ViewV1():
         if not hashers.check_password(req_storage['secret'], self.storage.secret_hash):
             raise HttpResponseException(HttpResponseForbidden('Bad secret for existing storage'))
 
+        # Change the storage published status if needed
+        if ('published' in req_storage):
+            if req_storage['published'] != self.storage.published:
+                self.storage.published = req_storage['published']
+                modified = True
+        else:
+            # If not present, default to want published
+            if not self.storage.published:
+                self.storage.published = True
+                modified = True
+
         # If any of these exist in the request, add or update them in the
         # self.storage.
         for k in ('comment', 'ssh_ping_host', 'ssh_ping_port', 'ssh_ping_user', 'space_total', 'space_available'):
@@ -545,7 +568,7 @@ class ViewV1():
         self.storage.save()
 
         machines = {}
-        for m in Machine.objects.filter(storage=self.storage, active=True):
+        for m in Machine.objects.filter(storage=self.storage, active=True, published=True):
             machines[m.uuid] = {
                 'environment_name': m.environment_name,
                 'service_name': m.service_name,

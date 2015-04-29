@@ -330,8 +330,11 @@ class ViewV1():
             loaded_sets = []
         out = []
         for f in set:
-            if f.startswith(('.', 'source')):
+            try:
                 (verb, subsetname) = f.split(' ', 1)
+            except ValueError:
+                continue
+            if verb in ('merge', '.'):
                 if subsetname in loaded_sets:
                     continue
                 try:
@@ -341,7 +344,12 @@ class ViewV1():
                 for f2 in self.build_filters(json.loads(fs.filters), loaded_sets):
                     out.append(f2)
                 loaded_sets.append(subsetname)
-            else:
+            elif verb in (
+                'dir-merge', ':', 'clear', '!',
+                'exclude', '-', 'include', '+',
+                'hide', 'H', 'show', 'S',
+                'protect', 'P', 'risk', 'R',
+            ):
                 out.append(f)
         return out
 

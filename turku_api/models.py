@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.contrib.auth.hashers import is_password_usable
 from django.utils import timezone
 from datetime import timedelta
 from south.modelsinspector import add_introspection_rules
@@ -17,6 +18,11 @@ def validate_uuid(value):
         str(uuid.UUID(value))
     except ValueError:
         raise ValidationError('Invalid UUID format')
+
+
+def validate_hashed_password(value):
+    if not is_password_usable(value):
+        raise ValidationError('Invalid hashed password')
 
 
 def validate_json_string_list(value):
@@ -71,6 +77,7 @@ class Auth(models.Model):
     )
     secret_hash = models.CharField(
         max_length=200,
+        validators=[validate_hashed_password],
         help_text='Hashed secret (password) of this auth.',
     )
     secret_type = models.CharField(
@@ -113,6 +120,7 @@ class Storage(models.Model):
     )
     secret_hash = models.CharField(
         max_length=200,
+        validators=[validate_hashed_password],
         help_text='Hashed secret (password) of this storage unit.',
     )
     comment = models.CharField(
@@ -198,6 +206,7 @@ class Machine(models.Model):
     )
     secret_hash = models.CharField(
         max_length=200,
+        validators=[validate_hashed_password],
         help_text='Hashed secret (password) of this machine.',
     )
     environment_name = models.CharField(

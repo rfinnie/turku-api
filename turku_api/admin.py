@@ -2,6 +2,8 @@ from django import forms
 from django.contrib import admin
 from turku_api.models import Machine, Source, Auth, Storage, BackupLog, FilterSet
 from django.utils.html import format_html
+from django.utils import timezone
+from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.core.urlresolvers import reverse
 import datetime
 
@@ -16,6 +18,22 @@ def get_admin_change_link(obj, name=None):
     return format_html(
         '<a href="%s">%s</a>' % (url, unicode(name))
     )
+
+
+def human_si(v, begin=0):
+    p = ('', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi')
+    i = begin
+    while v >= 1024.0:
+        v = int(v / 10.24) / 100.0
+        i += 1
+    return '%g %sB' % (v, p[i])
+
+
+def human_time(t):
+    if abs(timezone.now() - t) >= datetime.timedelta(days=1):
+        return t
+    else:
+        return naturaltime(t)
 
 
 class CustomModelAdmin(admin.ModelAdmin):
@@ -87,10 +105,16 @@ class MachineAdmin(CustomModelAdmin):
     storage_link.admin_order_field = 'storage__name'
     storage_link.short_description = 'storage'
 
+    def date_checked_in_human(self, obj):
+        return human_time(obj.date_checked_in)
+
+    date_checked_in_human.admin_order_field = 'date_checked_in'
+    date_checked_in_human.short_description = 'date checked in'
+
     form = MachineAdminForm
     list_display = (
         'unit_name', 'uuid', 'storage_link', 'environment_name',
-        'service_name', 'date_checked_in', 'published', 'active',
+        'service_name', 'date_checked_in_human', 'published', 'active',
         'healthy',
     )
     list_display_links = ('unit_name',)
@@ -103,6 +127,18 @@ class MachineAdmin(CustomModelAdmin):
 
 
 class SourceAdmin(CustomModelAdmin):
+    def date_last_backed_up_human(self, obj):
+        return human_time(obj.date_last_backed_up)
+
+    date_last_backed_up_human.admin_order_field = 'date_last_backed_up'
+    date_last_backed_up_human.short_description = 'date last backed up'
+
+    def date_next_backup_human(self, obj):
+        return human_time(obj.date_next_backup)
+
+    date_next_backup_human.admin_order_field = 'date_next_backup'
+    date_next_backup_human.short_description = 'date next backup'
+
     def machine_link(self, obj):
         return get_admin_change_link(obj.machine)
 
@@ -111,8 +147,8 @@ class SourceAdmin(CustomModelAdmin):
     machine_link.short_description = 'machine'
 
     list_display = (
-        'name', 'machine_link', 'path', 'date_last_backed_up',
-        'date_next_backup', 'published', 'active', 'healthy',
+        'name', 'machine_link', 'path', 'date_last_backed_up_human',
+        'date_next_backup_human', 'published', 'active', 'healthy',
     )
     list_display_links = ('name',)
     list_filter = (
@@ -149,11 +185,17 @@ class BackupLogAdmin(CustomModelAdmin):
     storage_link.admin_order_field = 'storage__name'
     storage_link.short_description = 'storage'
 
+    def date_human(self, obj):
+        return human_time(obj.date)
+
+    date_human.admin_order_field = 'date'
+    date_human.short_description = 'date'
+
     list_display = (
-        'date', 'source_link', 'success', 'snapshot', 'storage_link',
+        'date_human', 'source_link', 'success', 'snapshot', 'storage_link',
         'duration',
     )
-    list_display_links = ('date',)
+    list_display_links = ('date_human',)
     list_filter = ('date', 'success')
     ordering = ('-date',)
 
@@ -165,29 +207,27 @@ class FilterSetAdmin(CustomModelAdmin):
 
 
 class StorageAdmin(CustomModelAdmin):
-    def human_si(self, v, begin=0):
-        p = ('', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi')
-        i = begin
-        while v >= 1024.0:
-            v = int(v / 10.24) / 100.0
-            i += 1
-        return '%g %sB' % (v, p[i])
-
     def space_total_human(self, obj):
-        return self.human_si(obj.space_total, 2)
+        return human_si(obj.space_total, 2)
 
     space_total_human.admin_order_field = 'space_total'
     space_total_human.short_description = 'space total'
 
     def space_available_human(self, obj):
-        return self.human_si(obj.space_available, 2)
+        return human_si(obj.space_available, 2)
 
     space_available_human.admin_order_field = 'space_available'
     space_available_human.short_description = 'space available'
 
+    def date_checked_in_human(self, obj):
+        return human_time(obj.date_checked_in)
+
+    date_checked_in_human.admin_order_field = 'date_checked_in'
+    date_checked_in_human.short_description = 'date checked in'
+
     form = StorageAdminForm
     list_display = (
-        'name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in',
+        'name', 'ssh_ping_host', 'ssh_ping_user', 'date_checked_in_human',
         'space_total_human', 'space_available_human', 'published', 'active',
         'healthy',
     )

@@ -97,6 +97,22 @@ def random_weighted(m):
             return k
 
 
+def get_repo_revision():
+    import os
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if os.path.isdir(os.path.join(base_dir, '.bzr')):
+        try:
+            import bzrlib.errors
+            from bzrlib.branch import Branch
+        except ImportError:
+            return None
+        try:
+            branch = Branch.open(base_dir)
+        except bzrlib.errors.NotBranchError:
+            return None
+        return branch.last_revision_info()[0]
+
+
 class HttpResponseException(Exception):
     def __init__(self, message):
         self.message = message
@@ -595,6 +611,7 @@ def health(request):
     out = {
         'healthy': True,
         'date': timezone.now().isoformat(),
+        'repo_revision': get_repo_revision(),
         'counts': {
             'auth': Auth.objects.count(),
             'storage': Storage.objects.count(),

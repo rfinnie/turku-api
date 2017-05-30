@@ -290,7 +290,7 @@ class Source(models.Model):
             return True
         if not self.success:
             return False
-        return (now <= (self.date_next_backup + timedelta(hours=4)))
+        return (now <= (self.date_next_backup + timedelta(hours=10)))
     healthy.boolean = True
 
     SNAPSHOT_MODES = (

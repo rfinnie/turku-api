@@ -211,7 +211,7 @@ class Machine(models.Model):
             return True
         if not self.date_checked_in:
             return False
-        return (now <= (self.date_checked_in + timedelta(hours=4)))
+        return (now <= (self.date_checked_in + timedelta(hours=10)))
     healthy.boolean = True
 
     id = UuidPrimaryKeyField()

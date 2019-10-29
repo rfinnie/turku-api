@@ -342,6 +342,10 @@ class Source(models.Model):
         max_length=200, choices=SNAPSHOT_MODES,
         help_text='Override the storage unit\'s snapshot logic and use an explicit snapshot mode for this source.',
     )
+    preserve_hard_links = models.BooleanField(
+        default=False,
+        help_text='Whether to preserve hard links when backing up this source.',
+    )
     shared_service = models.BooleanField(
         default=False,
         help_text='Whether this source is part of a shared service of multiple machines to be backed up.',

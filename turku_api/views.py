@@ -294,6 +294,7 @@ class ViewV1():
                 'path', 'frequency', 'retention',
                 'comment', 'shared_service', 'large_rotating_files',
                 'large_modifying_files', 'bwlimit', 'snapshot_mode',
+                'preserve_hard_links',
             ):
                 if (k in req_sources[s.name]) and (getattr(s, k) != req_sources[s.name][k]):
                     setattr(s, k, req_sources[s.name][k])
@@ -328,6 +329,7 @@ class ViewV1():
                 'path', 'frequency', 'retention',
                 'comment', 'shared_service', 'large_rotating_files',
                 'large_modifying_files', 'bwlimit', 'snapshot_mode',
+                'preserve_hard_links',
             ):
                 if k not in req_sources[s.name]:
                     continue
@@ -399,6 +401,7 @@ class ViewV1():
                 'large_rotating_files': s.large_rotating_files,
                 'large_modifying_files': s.large_modifying_files,
                 'snapshot_mode': s.snapshot_mode,
+                'preserve_hard_links': s.preserve_hard_links,
                 'storage': {
                     'name': s.machine.storage.name,
                     'ssh_ping_host': s.machine.storage.ssh_ping_host,
@@ -473,6 +476,7 @@ class ViewV1():
                 'large_rotating_files': s.large_rotating_files,
                 'large_modifying_files': s.large_modifying_files,
                 'snapshot_mode': s.snapshot_mode,
+                'preserve_hard_links': s.preserve_hard_links,
                 'storage': {
                     'name': s.machine.storage.name,
                     'ssh_ping_host': s.machine.storage.ssh_ping_host,

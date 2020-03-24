@@ -32,7 +32,7 @@ def get_admin_change_link(obj, name=None):
     if not name:
         name = obj
     return format_html(
-        '<a href="%s">%s</a>' % (url, unicode(name))
+        '<a href="{}">{}</a>'.format(url, name)
     )
 
 

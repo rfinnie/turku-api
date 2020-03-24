@@ -59,10 +59,11 @@ class CustomModelAdmin(admin.ModelAdmin):
 
     def render_change_form(self, request, context, *args, **kwargs):
         related_links = []
-        if 'object_id' in context:
-            for obj in self.model._meta.get_all_related_objects():
-                count = obj.model.objects.filter(**{obj.field.name: context['object_id']}).count()
-                related_links.append((obj, count))
+        # Broken in Django 1.8+; see if related_links can be re-implemented
+        #if 'object_id' in context:
+        #    for obj in self.model._meta.get_all_related_objects():
+        #        count = obj.model.objects.filter(**{obj.field.name: context['object_id']}).count()
+        #        related_links.append((obj, count))
         context.update({'related_links': related_links})
 
         return super(CustomModelAdmin, self).render_change_form(request, context, *args, **kwargs)
@@ -71,6 +72,7 @@ class CustomModelAdmin(admin.ModelAdmin):
 class MachineAdminForm(forms.ModelForm):
     class Meta:
         model = Machine
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(MachineAdminForm, self).__init__(*args, **kwargs)
@@ -80,6 +82,7 @@ class MachineAdminForm(forms.ModelForm):
 class StorageAdminForm(forms.ModelForm):
     class Meta:
         model = Storage
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(StorageAdminForm, self).__init__(*args, **kwargs)

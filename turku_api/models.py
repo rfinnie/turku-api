@@ -20,7 +20,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth.hashers import is_password_usable
 from django.utils import timezone
 from datetime import timedelta
-from south.modelsinspector import add_introspection_rules
 import json
 import uuid
 
@@ -462,6 +461,3 @@ class FilterSet(models.Model):
 
     def __unicode__(self):
         return self.name
-
-
-add_introspection_rules([], ["^turku_api\.models\.UuidPrimaryKeyField"])

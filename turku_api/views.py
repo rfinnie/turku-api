@@ -99,9 +99,9 @@ def frequency_next_scheduled(frequency, base_time=None):
 
 def random_weighted(m):
     """Return a weighted random key."""
-    total = sum([v for v in m.values()])
+    total = sum(m.values())
     if total <= 0:
-        return random.choice(m.keys())
+        return random.choice(list(m.keys()))
     weighted = []
     tp = 0
     for (k, v) in m.items():
@@ -186,7 +186,7 @@ class ViewV1():
         # Check for global auth
         if 'auth' not in self.req:
             raise HttpResponseException(HttpResponseForbidden('Bad auth'))
-        if type(self.req['auth']) == dict:
+        if isinstance(self.req['auth'], dict):
             if not (('name' in self.req['auth']) and ('secret' in self.req['auth'])):
                 raise HttpResponseException(HttpResponseForbidden('Bad auth'))
             try:
@@ -203,7 +203,7 @@ class ViewV1():
         raise HttpResponseException(HttpResponseForbidden('Bad auth'))
 
     def update_config(self):
-        if not (('machine' in self.req) and (type(self.req['machine']) == dict)):
+        if not (('machine' in self.req) and (isinstance(self.req['machine'], dict))):
             raise HttpResponseException(HttpResponseBadRequest('"machine" dict required'))
         req_machine = self.req['machine']
 
@@ -271,12 +271,12 @@ class ViewV1():
 
         if 'sources' in req_machine:
             req_sources = req_machine['sources']
-            if not type(req_sources) == dict:
+            if not isinstance(req_sources, dict):
                 raise HttpResponseException(HttpResponseBadRequest('Invalid type for "sources"'))
         elif 'sources' in self.req:
             # XXX legacy
             req_sources = self.req['sources']
-            if not type(req_sources) == dict:
+            if not isinstance(req_sources, dict):
                 raise HttpResponseException(HttpResponseBadRequest('Invalid type for "sources"'))
         else:
             req_sources = {}
@@ -318,7 +318,7 @@ class ViewV1():
                     raise HttpResponseException(HttpResponseBadRequest('Validation error: %s' % str(e)))
                 s.save()
 
-        for name in req_sources.keys():
+        for name in req_sources:
             if name in sources_in_db:
                 continue
             s = Source()
@@ -413,7 +413,7 @@ class ViewV1():
         return scheduled_sources
 
     def agent_ping_checkin(self):
-        if not (('machine' in self.req) and (type(self.req['machine']) == dict)):
+        if not (('machine' in self.req) and (isinstance(self.req['machine'], dict))):
             raise HttpResponseException(HttpResponseBadRequest('"machine" dict required'))
         req_machine = self.req['machine']
 
@@ -447,7 +447,7 @@ class ViewV1():
         return HttpResponse(json.dumps(out), content_type='application/json')
 
     def agent_ping_restore(self):
-        if not (('machine' in self.req) and (type(self.req['machine']) == dict)):
+        if not (('machine' in self.req) and (isinstance(self.req['machine'], dict))):
             raise HttpResponseException(HttpResponseBadRequest('"machine" dict required'))
         req_machine = self.req['machine']
 
@@ -550,7 +550,7 @@ class ViewV1():
         return HttpResponse(json.dumps({}), content_type='application/json')
 
     def storage_update_config(self):
-        if not (('storage' in self.req) and (type(self.req['storage']) == dict)):
+        if not (('storage' in self.req) and (isinstance(self.req['storage'], dict))):
             raise HttpResponseException(HttpResponseBadRequest('"storage" dict required'))
         req_storage = self.req['storage']
 

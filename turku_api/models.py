@@ -45,10 +45,10 @@ def validate_json_string_list(value):
         decoded_json = json.loads(value)
     except ValueError:
         raise ValidationError('Must be a valid JSON string list')
-    if not type(decoded_json) == list:
+    if not isinstance(decoded_json, (list, tuple, set)):
         raise ValidationError('Must be a valid JSON string list')
     for i in decoded_json:
-        if not type(i) in (str, unicode):
+        if not isinstance(i, str):
             raise ValidationError('Must be a valid JSON string list')
 
 
@@ -113,7 +113,7 @@ class Auth(models.Model):
         help_text='Date/time this auth was added.',
     )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
@@ -198,7 +198,7 @@ class Storage(models.Model):
         help_text='Date/time this storage unit last checked in.',
     )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
@@ -277,7 +277,7 @@ class Machine(models.Model):
         help_text='Date/time this machine last checked in.',
     )
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s (%s)' % (self.unit_name, self.uuid[0:8])
 
 
@@ -393,7 +393,7 @@ class Source(models.Model):
     class Meta:
         unique_together = (('machine', 'name'),)
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s %s' % (self.machine.unit_name, self.name)
 
 
@@ -432,7 +432,7 @@ class BackupLog(models.Model):
         help_text='Summary of the backup\'s events.',
     )
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s %s' % (str(self.source), self.date.strftime('%Y-%m-%d %H:%M:%S'))
 
 
@@ -459,5 +459,5 @@ class FilterSet(models.Model):
         help_text='Date/time this filter set was added.',
     )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name

@@ -71,6 +71,6 @@ DATABASES = {
 SECRET_KEY = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(30))
 
 try:
-    from local_settings import *
+    from turku_api.local_settings import *
 except ImportError:
     pass

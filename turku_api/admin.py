@@ -58,12 +58,19 @@ class CustomModelAdmin(admin.ModelAdmin):
     change_form_template = 'admin/custom_change_form.html'
 
     def render_change_form(self, request, context, *args, **kwargs):
+        # Build a list of related children objects and their counts
+        # so they may be linked to in the admin interface
         related_links = []
-        # Broken in Django 1.8+; see if related_links can be re-implemented
-        #if 'object_id' in context:
-        #    for obj in self.model._meta.get_all_related_objects():
-        #        count = obj.model.objects.filter(**{obj.field.name: context['object_id']}).count()
-        #        related_links.append((obj, count))
+        if 'object_id' in context and hasattr(self.model._meta, 'get_fields'):
+            related_objs = [
+                f for f in self.model._meta.get_fields()
+                if (f.one_to_many or f.one_to_one)
+                and f.auto_created and not f.concrete
+            ]
+            for obj in related_objs:
+                count = obj.related_model.objects.filter(**{obj.field.name: context['object_id']}).count()
+                if count > 0:
+                    related_links.append((obj, obj.related_model._meta, count))
         context.update({'related_links': related_links})
 
         return super(CustomModelAdmin, self).render_change_form(request, context, *args, **kwargs)

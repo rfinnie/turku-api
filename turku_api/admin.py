@@ -20,7 +20,10 @@ from turku_api.models import Machine, Source, Auth, Storage, BackupLog, FilterSe
 from django.utils.html import format_html
 from django.utils import timezone
 from django.contrib.humanize.templatetags.humanize import naturaltime
-from django.core.urlresolvers import reverse
+try:
+    from django.urls import reverse  # 1.10+
+except ModuleNotFoundError:
+    from django.core.urlresolvers import reverse  # pre-1.10
 import datetime
 
 

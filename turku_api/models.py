@@ -172,7 +172,7 @@ class Storage(models.Model):
         help_text='Available disk space of this storage unit\'s storage directories, in MiB.',
     )
     auth = models.ForeignKey(
-        Auth, validators=[validate_storage_auth],
+        Auth, validators=[validate_storage_auth], on_delete=models.CASCADE,
         help_text='Storage auth used to register this storage unit.',
     )
     active = models.BooleanField(
@@ -248,11 +248,11 @@ class Machine(models.Model):
         help_text='SSH public key of this machine\'s agent.',
     )
     auth = models.ForeignKey(
-        Auth, validators=[validate_machine_auth],
+        Auth, validators=[validate_machine_auth], on_delete=models.CASCADE,
         help_text='Machine auth used to register this machine.',
     )
     storage = models.ForeignKey(
-        Storage,
+        Storage, on_delete=models.CASCADE,
         help_text='Storage unit this machine is assigned to.',
     )
     active = models.BooleanField(
@@ -303,7 +303,7 @@ class Source(models.Model):
         help_text='Computer-readable source name identifier.',
     )
     machine = models.ForeignKey(
-        Machine,
+        Machine, on_delete=models.CASCADE,
         help_text='Machine this source belongs to.',
     )
     comment = models.CharField(
@@ -400,7 +400,7 @@ class Source(models.Model):
 class BackupLog(models.Model):
     id = UuidPrimaryKeyField()
     source = models.ForeignKey(
-        Source,
+        Source, on_delete=models.CASCADE,
         help_text='Source this log entry belongs to.',
     )
     date = models.DateTimeField(
@@ -408,7 +408,7 @@ class BackupLog(models.Model):
         help_text='Date/time this log entry was received/processed.',
     )
     storage = models.ForeignKey(
-        Storage, blank=True, null=True,
+        Storage, blank=True, null=True, on_delete=models.CASCADE,
         help_text='Storage unit this backup occurred on.',
     )
     success = models.BooleanField(

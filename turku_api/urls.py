@@ -15,7 +15,10 @@
 # <http://www.gnu.org/licenses/>.
 
 from django.conf.urls import include, url
-from django.core.urlresolvers import reverse_lazy
+try:
+    from django.urls import reverse_lazy  # 1.10+
+except ModuleNotFoundError:
+    from django.core.urlresolvers import reverse_lazy  # pre-1.10
 from django.views.generic.base import RedirectView
 from turku_api import views
 from django.contrib import admin
@@ -32,7 +35,7 @@ urlpatterns = [
     url(r'^v1/storage_ping_checkin$', views.storage_ping_checkin, name='storage_ping_checkin'),
     url(r'^v1/storage_ping_source_update$', views.storage_ping_source_update, name='storage_ping_source_update'),
     url(r'^v1/storage_update_config$', views.storage_update_config, name='storage_update_config'),
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', admin.site.urls),
 ]
 
 try:

@@ -31,7 +31,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'turku_api',
 )
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -39,6 +39,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
+MIDDLEWARE_CLASSES = MIDDLEWARE  # pre-1.10
 ROOT_URLCONF = 'turku_api.urls'
 WSGI_APPLICATION = 'turku_api.wsgi.application'
 LANGUAGE_CODE = 'en-us'

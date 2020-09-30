@@ -302,7 +302,6 @@ class Source(models.Model):
 
     SNAPSHOT_MODES = (
         ("none", "No snapshotting"),
-        ("attic", "Attic"),
         ("link-dest", "Hardlink trees (rsync --link-dest)"),
     )
     id = UuidPrimaryKeyField()

@@ -25,4 +25,6 @@ setup(
     url="https://launchpad.net/turku",
     python_requires="~=3.4",
     packages=["turku_api"],
+    include_package_data=True,
+    install_requires=["Django"],
 )

@@ -20,7 +20,7 @@ from django.views.generic.base import RedirectView
 
 try:
     from django.urls import reverse_lazy  # 1.10+
-except ModuleNotFoundError:
+except ImportError:
     from django.core.urlresolvers import reverse_lazy  # pre-1.10
 
 from turku_api import views

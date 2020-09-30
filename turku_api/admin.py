@@ -24,7 +24,7 @@ from django.utils.html import format_html
 
 try:
     from django.urls import reverse  # 1.10+
-except ModuleNotFoundError:
+except ImportError:
     from django.core.urlresolvers import reverse  # pre-1.10
 
 from turku_api.models import Auth, BackupLog, FilterSet, Machine, Source, Storage

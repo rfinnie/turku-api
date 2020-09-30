@@ -30,12 +30,47 @@ from django.http import (
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
+try:
+    from turku_api.croniter_hash import croniter_hash
+except ImportError as e:
+    # We only want to raise this import error if cron format is
+    # attempted by the client
+    croniter_hash = e
+
 from turku_api.models import Auth, BackupLog, FilterSet, Machine, Source, Storage
 
 
-def frequency_next_scheduled(frequency, base_time=None):
+def frequency_next_scheduled(frequency, source_id, base_time=None):
+    """Return the next scheduled datetime, given a frequency definition
+
+    Examples of English definitions:
+        "hourly", "daily", "weekly", "sunday", "monday", "tuesday",
+        "wednesday", "thursday", "friday", "saturday"
+    Within a specific time range: "daily, 0800-1600"
+    These definitions will return a random time within the definition
+    each time.
+
+    If croniter is installed, "cron" plus a cron definition can be used:
+        "cron 42 8 * * *"
+    Or a Jenkins-style hashed cron definition, consistently hashed
+    against the source ID:
+        "cron H H(8-16) * * *"
+    Or randomized:
+        "cron R R(8-16) * * *"
+    """
     if not base_time:
         base_time = timezone.now()
+
+    if frequency.startswith("cron"):
+        if isinstance(croniter_hash, ImportError):
+            # croniter is not installed
+            raise croniter_hash
+        cron_schedule = " ".join(frequency.split(" ")[1:])
+        croniter_def = croniter_hash(
+            cron_schedule, start_time=base_time, hash_id=source_id
+        )
+        return croniter_def.get_next(datetime)
+
     f = [x.strip() for x in frequency.split(",")]
 
     if f[0] == "hourly":
@@ -371,7 +406,7 @@ class ViewV1:
                     setattr(s, k, req_sources[s.name][k])
                     if k == "frequency":
                         s.date_next_backup = frequency_next_scheduled(
-                            req_sources[s.name][k]
+                            req_sources[s.name][k], s.id
                         )
                     modified = True
             for k in ("filter", "exclude"):
@@ -422,7 +457,7 @@ class ViewV1:
                 setattr(s, k, v)
 
             # New source, so schedule it regardless
-            s.date_next_backup = frequency_next_scheduled(s.frequency)
+            s.date_next_backup = frequency_next_scheduled(s.frequency, s.id)
 
             try:
                 s.full_clean()
@@ -636,7 +671,7 @@ class ViewV1:
             s.success = is_success
             if is_success:
                 s.date_last_backed_up = now
-                s.date_next_backup = frequency_next_scheduled(s.frequency, now)
+                s.date_next_backup = frequency_next_scheduled(s.frequency, s.id, now)
             s.save()
             bl = BackupLog()
             bl.source = s

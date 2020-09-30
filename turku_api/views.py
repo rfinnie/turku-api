@@ -575,7 +575,9 @@ class ViewV1:
 
         out = {"machine": {"scheduled_sources": scheduled_sources}}
 
-        # XXX legacy
+        # Legacy: data hasn't been used since 2015.  However, turku-agent
+        # until 2020-09-30 would check for this key and would exit if it
+        # didn't exist, but would do nothing with it.
         out["scheduled_sources"] = scheduled_sources
 
         m.date_checked_in = now

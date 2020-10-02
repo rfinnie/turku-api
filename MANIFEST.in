@@ -3,7 +3,6 @@ include manage.py
 include MANIFEST.in
 include README.md
 include requirements.txt
-include scripts/turku_health
 include tests/*.py
 include tox.ini
 include turku_api/templates/admin/*.html

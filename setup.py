@@ -24,7 +24,7 @@ setup(
     author="Ryan Finnie",
     url="https://launchpad.net/turku",
     python_requires="~=3.4",
-    packages=["turku_api"],
+    packages=["turku_api", "turku_api.management.commands"],
     include_package_data=True,
     install_requires=["Django"],
 )

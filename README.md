@@ -45,29 +45,10 @@ Getting the admin web site working is recommended, but not required.
 Once the installation is complete, you will need to add at least one Storage registration Auth, and at least one Machine registration Auth:
 
 ```
-# python3 manage.py shell
-
-from django.contrib.auth import hashers
-from turku_api.models import Auth
-
-storage_secret = hashers.get_random_string(30)
-storage_auth = Auth()
-storage_auth.active = True
-storage_auth.name = 'Storages'
-storage_auth.secret_hash = hashers.make_password(storage_secret)
-storage_auth.secret_type = 'storage_reg'
-storage_auth.save()
-
-machine_secret = hashers.get_random_string(30)
-machine_auth = Auth()
-machine_auth.active = True
-machine_auth.name = 'Machines'
-machine_auth.secret_hash = hashers.make_password(machine_secret)
-machine_auth.secret_type = 'machine_reg'
-machine_auth.save()
-
-print('Storage registration secret is: {}'.format(storage_secret))
-print('Machine registration secret is: {}'.format(machine_secret))
+$ python manage.py turku_auth_create --name "Storage Registrations" storage_reg
+New registration secret created: fDLICqVwO5wouqTAPKzI7WN7C1Zd0L (Storage Registrations)
+$ python manage.py turku_auth_create --name "Machine Registrations" machine_reg
+New registration secret created: IvBXnYmTTzzPlj2NP2xFY5yj5JLRkp (Machine Registrations)
 ```
 
 Multiple of each type of Auth can be created.  For example, you may have multiple groups within an organization; creating a separate Machine registration Auth for each group may be desired.  turku-api tracks which Auth is used to register a Machine, but the Auth is not used for authentication beyond registration; a Machine-specific generated secret is used for check-ins.

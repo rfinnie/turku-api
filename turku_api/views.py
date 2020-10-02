@@ -84,7 +84,9 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
         croniter_def = croniter_hash(
             cron_schedule, start_time=base_time, hash_id=source_id
         )
-        return croniter_def.get_next(datetime)
+        return croniter_def.get_next(datetime).replace(
+            second=hashedint(0, 59, source_id)
+        )
 
     f = [x.strip() for x in frequency.split(",")]
 

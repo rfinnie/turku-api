@@ -14,6 +14,7 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
+import binascii
 from datetime import datetime, timedelta
 import json
 import random
@@ -40,6 +41,20 @@ except ImportError as e:
 from turku_api.models import Auth, BackupLog, FilterSet, Machine, Source, Storage
 
 
+def hashedint(a, b, hash_id=""):
+    """ID-hashed drop-in replacement for random.randint"""
+
+    if isinstance(hash_id, bytes):
+        id_bytes = hash_id
+    elif isinstance(hash_id, str):
+        id_bytes = hash_id.encode("UTF-8")
+    else:
+        raise TypeError("id must be bytes or UTF-8 string")
+
+    crc = binascii.crc32(id_bytes) & 0xFFFFFFFF
+    return (crc % (b - a + 1)) + a
+
+
 def frequency_next_scheduled(frequency, source_id, base_time=None):
     """Return the next scheduled datetime, given a frequency definition
 
@@ -47,8 +62,8 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
         "hourly", "daily", "weekly", "sunday", "monday", "tuesday",
         "wednesday", "thursday", "friday", "saturday"
     Within a specific time range: "daily, 0800-1600"
-    These definitions will return a random time within the definition
-    each time.
+    These definitions will return a randomly-hashed time within the
+    definition each time.
 
     If croniter is installed, "cron" plus a cron definition can be used:
         "cron 42 8 * * *"
@@ -74,12 +89,14 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
     f = [x.strip() for x in frequency.split(",")]
 
     if f[0] == "hourly":
-        target_time = base_time.replace(
-            minute=random.randint(0, 59), second=random.randint(0, 59), microsecond=0
-        ) + timedelta(hours=1)
-        # Push it out 10 minutes if it falls within 10 minutes of now
-        if target_time < (base_time + timedelta(minutes=10)):
-            target_time = target_time + timedelta(minutes=10)
+        target_time = (
+            base_time.replace(
+                minute=hashedint(0, 59, source_id),
+                second=hashedint(0, 59, source_id),
+                microsecond=0,
+            )
+            + timedelta(hours=1)
+        )
         return target_time
 
     today = base_time.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -87,17 +104,14 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
         # Tomorrow
         target_date = today + timedelta(days=1)
     elif f[0] == "weekly":
-        # Random day next week
-        target_day = random.randint(0, 6)
+        # Hashed day next week
+        target_day = hashedint(0, 6, source_id)
         target_date = (
             today
             + timedelta(weeks=1)
             - timedelta(days=((today.weekday() + 1) % 7))
             + timedelta(days=target_day)
         )
-        # Push it out 3 days if it falls within 3 days of now
-        if target_date < (base_time + timedelta(days=3)):
-            target_date = target_date + timedelta(days=3)
     elif f[0] in (
         "sunday",
         "monday",
@@ -129,17 +143,14 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
         next_month = (today.replace(day=1) + timedelta(days=40)).replace(day=1)
         month_after = (next_month.replace(day=1) + timedelta(days=40)).replace(day=1)
         target_date = next_month + timedelta(
-            days=random.randint(1, (month_after - next_month).days)
+            days=hashedint(1, (month_after - next_month).days, source_id)
         )
-        # Push it out a week if it falls within a week of now
-        if target_date < (base_time + timedelta(days=7)):
-            target_date = target_date + timedelta(days=7)
     else:
-        # Fall back to tomorrow
+        # Fall back to daily
         target_date = today + timedelta(days=1)
 
     if len(f) == 1:
-        return target_date + timedelta(seconds=random.randint(0, 86399))
+        return target_date + timedelta(seconds=hashedint(0, 86399, source_id))
     time_range = f[1].split("-")
     start = (int(time_range[0][0:2]) * 60 * 60) + (int(time_range[0][2:4]) * 60)
     if len(time_range) == 1:
@@ -149,7 +160,7 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
     if end < start:
         # Day rollover
         end = end + 86400
-    return target_date + timedelta(seconds=random.randint(start, end))
+    return target_date + timedelta(seconds=hashedint(start, end, source_id))
 
 
 def random_weighted(m):

@@ -229,8 +229,9 @@ class ViewV1:
         except ValueError as e:
             raise HttpResponseException(HttpResponseBadRequest(str(e)))
 
-    def _storage_authenticate(self):
-        # Check for storage auth
+    def storage_login(self, is_update_config=False):
+        """Authenticate a Storage login"""
+
         if "storage" not in self.req:
             raise HttpResponseException(
                 HttpResponseBadRequest('Missing required option "storage"')
@@ -239,18 +240,22 @@ class ViewV1:
             if k not in self.req["storage"]:
                 raise HttpResponseException(HttpResponseForbidden("Bad auth"))
         try:
-            self.storage = Storage.objects.get(
-                name=self.req["storage"]["name"], active=True
-            )
+            storage = Storage.objects.get(name=self.req["storage"]["name"], active=True)
         except Storage.DoesNotExist:
-            raise HttpResponseException(HttpResponseForbidden("Bad auth"))
+            if is_update_config:
+                return
+            else:
+                raise HttpResponseException(HttpResponseForbidden("Bad auth"))
         if not hashers.check_password(
-            self.req["storage"]["secret"], self.storage.secret_hash
+            self.req["storage"]["secret"], storage.secret_hash
         ):
             raise HttpResponseException(HttpResponseForbidden("Bad auth"))
 
-    def _storage_get_machine(self):
-        # Make sure these exist in the request
+        return storage
+
+    def storage_get_machine(self, storage):
+        """Get a Machine associated with a Storage request"""
+
         if "machine" not in self.req:
             raise HttpResponseException(
                 HttpResponseBadRequest('Missing required option "machine"')
@@ -264,12 +269,46 @@ class ViewV1:
         try:
             return Machine.objects.get(
                 uuid=self.req["machine"]["uuid"],
-                storage=self.storage,
+                storage=storage,
                 active=True,
                 published=True,
             )
         except Machine.DoesNotExist:
             raise HttpResponseException(HttpResponseNotFound("Machine not found"))
+
+    def machine_login(self, is_update_config=False):
+        """Authenticate a Machine login"""
+
+        if not (("machine" in self.req) and (isinstance(self.req["machine"], dict))):
+            raise HttpResponseException(
+                HttpResponseBadRequest('"machine" dict required')
+            )
+
+        # Make sure these exist in the request (validation comes later)
+        for k in ("uuid", "secret"):
+            if k not in self.req["machine"]:
+                raise HttpResponseException(
+                    HttpResponseBadRequest('Missing required machine option "%s"' % k)
+                )
+
+        # Load the machine
+        try:
+            machine = Machine.objects.get(uuid=self.req["machine"]["uuid"], active=True)
+        except Machine.DoesNotExist:
+            if is_update_config:
+                return
+            else:
+                # Return Forbidden for nonexistent Machines to avoid
+                # existence leaking
+                raise HttpResponseException(HttpResponseForbidden("Bad auth"))
+        if (not is_update_config) and (not machine.published):
+            raise HttpResponseException(HttpResponseForbidden("Bad auth"))
+        if not hashers.check_password(
+            self.req["machine"]["secret"], machine.secret_hash
+        ):
+            raise HttpResponseException(HttpResponseForbidden("Bad auth"))
+
+        return machine
 
     def get_registration_auth(self, secret_type):
         # Check for global auth
@@ -294,50 +333,31 @@ class ViewV1:
         raise HttpResponseException(HttpResponseForbidden("Bad auth"))
 
     def update_config(self):
-        if not (("machine" in self.req) and (isinstance(self.req["machine"], dict))):
-            raise HttpResponseException(
-                HttpResponseBadRequest('"machine" dict required')
-            )
+        machine = self.machine_login(is_update_config=True)
         req_machine = self.req["machine"]
-
-        # Make sure these exist in the request (validation comes later)
-        for k in ("uuid", "secret"):
-            if k not in req_machine:
-                raise HttpResponseException(
-                    HttpResponseBadRequest('Missing required machine option "%s"' % k)
-                )
-
-        # Create or load the machine
-        try:
-            m = Machine.objects.get(uuid=req_machine["uuid"], active=True)
-            modified = False
-        except Machine.DoesNotExist:
-            m = Machine(uuid=req_machine["uuid"])
-            m.secret_hash = hashers.make_password(req_machine["secret"])
-            m.auth = self.get_registration_auth("machine_reg")
+        modified = False
+        if machine is None:
+            # machine_login failed, so go ahead with creating a new Machine
+            # (but only if get_registration_auth doesn't raise)
+            machine = Machine(uuid=req_machine["uuid"])
+            machine.secret_hash = hashers.make_password(req_machine["secret"])
+            machine.auth = self.get_registration_auth("machine_reg")
             modified = True
-
-        # If the machine existed before, it had a secret.  Make sure that
-        # hasn't changed.
-        if not hashers.check_password(req_machine["secret"], m.secret_hash):
-            raise HttpResponseException(
-                HttpResponseForbidden("Bad secret for existing machine")
-            )
 
         # Change the machine published status if needed
         if "published" in req_machine:
-            if req_machine["published"] != m.published:
-                m.published = req_machine["published"]
+            if req_machine["published"] != machine.published:
+                machine.published = req_machine["published"]
                 modified = True
         else:
             # If not present, default to want published
-            if not m.published:
-                m.published = True
+            if not machine.published:
+                machine.published = True
                 modified = True
 
         new_storage_needed = False
         try:
-            m.storage
+            machine.storage
         except Storage.DoesNotExist:
             new_storage_needed = True
         if new_storage_needed:
@@ -345,7 +365,7 @@ class ViewV1:
                 weights = {}
                 for storage in Storage.objects.filter(active=True, published=True):
                     weights[storage] = storage.space_available
-                m.storage = random_weighted(weights)
+                machine.storage = random_weighted(weights)
                 modified = True
             except IndexError:
                 raise HttpResponseException(
@@ -361,20 +381,20 @@ class ViewV1:
             "comment",
             "ssh_public_key",
         ):
-            if (k in req_machine) and (getattr(m, k) != req_machine[k]):
-                setattr(m, k, req_machine[k])
+            if (k in req_machine) and (getattr(machine, k) != req_machine[k]):
+                setattr(machine, k, req_machine[k])
                 modified = True
 
         # Validate/save if modified
         if modified:
-            m.date_updated = timezone.now()
+            machine.date_updated = timezone.now()
             try:
-                m.full_clean()
+                machine.full_clean()
             except ValidationError as e:
                 raise HttpResponseException(
                     HttpResponseBadRequest("Validation error: %s" % str(e))
                 )
-            m.save()
+            machine.save()
 
         if "sources" in req_machine:
             req_sources = req_machine["sources"]
@@ -393,12 +413,12 @@ class ViewV1:
             req_sources = {}
 
         sources_in_db = []
-        for s in m.source_set.all():
-            if s.name not in req_sources:
-                s.published = False
-                s.save()
+        for source in machine.source_set.all():
+            if source.name not in req_sources:
+                source.published = False
+                source.save()
                 continue
-            sources_in_db.append(s.name)
+            sources_in_db.append(source.name)
 
             modified = False
             for k in (
@@ -413,40 +433,40 @@ class ViewV1:
                 "snapshot_mode",
                 "preserve_hard_links",
             ):
-                if (k in req_sources[s.name]) and (
-                    getattr(s, k) != req_sources[s.name][k]
+                if (k in req_sources[source.name]) and (
+                    getattr(source, k) != req_sources[source.name][k]
                 ):
-                    setattr(s, k, req_sources[s.name][k])
+                    setattr(source, k, req_sources[source.name][k])
                     if k == "frequency":
-                        s.date_next_backup = frequency_next_scheduled(
-                            req_sources[s.name][k], s.id
+                        source.date_next_backup = frequency_next_scheduled(
+                            req_sources[source.name][k], source.id
                         )
                     modified = True
             for k in ("filter", "exclude"):
-                if k not in req_sources[s.name]:
+                if k not in req_sources[source.name]:
                     continue
-                v = json.dumps(req_sources[s.name][k], sort_keys=True)
-                if getattr(s, k) != v:
-                    setattr(s, k, v)
+                v = json.dumps(req_sources[source.name][k], sort_keys=True)
+                if getattr(source, k) != v:
+                    setattr(source, k, v)
                     modified = True
 
             if modified:
-                s.published = True
-                s.date_updated = timezone.now()
+                source.published = True
+                source.date_updated = timezone.now()
                 try:
-                    s.full_clean()
+                    source.full_clean()
                 except ValidationError as e:
                     raise HttpResponseException(
                         HttpResponseBadRequest("Validation error: %s" % str(e))
                     )
-                s.save()
+                source.save()
 
-        for name in req_sources:
-            if name in sources_in_db:
+        for source_name in req_sources:
+            if source_name in sources_in_db:
                 continue
-            s = Source()
-            s.name = name
-            s.machine = m
+            source = Source()
+            source.name = source_name
+            source.machine = machine
 
             for k in (
                 "path",
@@ -460,33 +480,35 @@ class ViewV1:
                 "snapshot_mode",
                 "preserve_hard_links",
             ):
-                if k not in req_sources[s.name]:
+                if k not in req_sources[source.name]:
                     continue
-                setattr(s, k, req_sources[s.name][k])
+                setattr(source, k, req_sources[source.name][k])
             for k in ("filter", "exclude"):
-                if k not in req_sources[s.name]:
+                if k not in req_sources[source.name]:
                     continue
-                v = json.dumps(req_sources[s.name][k], sort_keys=True)
-                setattr(s, k, v)
+                v = json.dumps(req_sources[source.name][k], sort_keys=True)
+                setattr(source, k, v)
 
             # New source, so schedule it regardless
-            s.date_next_backup = frequency_next_scheduled(s.frequency, s.id)
+            source.date_next_backup = frequency_next_scheduled(
+                source.frequency, source.id
+            )
 
             try:
-                s.full_clean()
+                source.full_clean()
             except ValidationError as e:
                 raise HttpResponseException(
                     HttpResponseBadRequest("Validation error: %s" % str(e))
                 )
-            s.save()
+            source.save()
 
         # XXX legacy
         out = {
-            "storage_name": m.storage.name,
-            "ssh_ping_host": m.storage.ssh_ping_host,
-            "ssh_ping_host_keys": json.loads(m.storage.ssh_ping_host_keys),
-            "ssh_ping_port": m.storage.ssh_ping_port,
-            "ssh_ping_user": m.storage.ssh_ping_user,
+            "storage_name": machine.storage.name,
+            "ssh_ping_host": machine.storage.ssh_ping_host,
+            "ssh_ping_host_keys": json.loads(machine.storage.ssh_ping_host_keys),
+            "ssh_ping_port": machine.storage.ssh_ping_port,
+            "ssh_ping_user": machine.storage.ssh_ping_user,
         }
         return HttpResponse(json.dumps(out), content_type="application/json")
 
@@ -533,57 +555,35 @@ class ViewV1:
     def get_checkin_scheduled_sources(self, m):
         scheduled_sources = {}
         now = timezone.now()
-        for s in m.source_set.filter(
+        for source in m.source_set.filter(
             date_next_backup__lte=now, active=True, published=True
         ):
-            scheduled_sources[s.name] = {
-                "path": s.path,
-                "retention": s.retention,
-                "bwlimit": s.bwlimit,
-                "filter": self.build_filters(json.loads(s.filter)),
-                "exclude": json.loads(s.exclude),
-                "shared_service": s.shared_service,
-                "large_rotating_files": s.large_rotating_files,
-                "large_modifying_files": s.large_modifying_files,
-                "snapshot_mode": s.snapshot_mode,
-                "preserve_hard_links": s.preserve_hard_links,
+            scheduled_sources[source.name] = {
+                "path": source.path,
+                "retention": source.retention,
+                "bwlimit": source.bwlimit,
+                "filter": self.build_filters(json.loads(source.filter)),
+                "exclude": json.loads(source.exclude),
+                "shared_service": source.shared_service,
+                "large_rotating_files": source.large_rotating_files,
+                "large_modifying_files": source.large_modifying_files,
+                "snapshot_mode": source.snapshot_mode,
+                "preserve_hard_links": source.preserve_hard_links,
                 "storage": {
-                    "name": s.machine.storage.name,
-                    "ssh_ping_host": s.machine.storage.ssh_ping_host,
+                    "name": source.machine.storage.name,
+                    "ssh_ping_host": source.machine.storage.ssh_ping_host,
                     "ssh_ping_host_keys": json.loads(
-                        s.machine.storage.ssh_ping_host_keys
+                        source.machine.storage.ssh_ping_host_keys
                     ),
-                    "ssh_ping_port": s.machine.storage.ssh_ping_port,
-                    "ssh_ping_user": s.machine.storage.ssh_ping_user,
+                    "ssh_ping_port": source.machine.storage.ssh_ping_port,
+                    "ssh_ping_user": source.machine.storage.ssh_ping_user,
                 },
             }
         return scheduled_sources
 
     def agent_ping_checkin(self):
-        if not (("machine" in self.req) and (isinstance(self.req["machine"], dict))):
-            raise HttpResponseException(
-                HttpResponseBadRequest('"machine" dict required')
-            )
-        req_machine = self.req["machine"]
-
-        # Make sure these exist in the request
-        for k in ("uuid", "secret"):
-            if k not in req_machine:
-                raise HttpResponseException(
-                    HttpResponseBadRequest('Missing required machine option "%s"' % k)
-                )
-
-        # Load the machine
-        try:
-            m = Machine.objects.get(
-                uuid=req_machine["uuid"], active=True, published=True
-            )
-        except Machine.DoesNotExist:
-            raise HttpResponseException(HttpResponseForbidden("Bad auth"))
-        if not hashers.check_password(req_machine["secret"], m.secret_hash):
-            raise HttpResponseException(HttpResponseForbidden("Bad auth"))
-
-        scheduled_sources = self.get_checkin_scheduled_sources(m)
+        machine = self.machine_login()
+        scheduled_sources = self.get_checkin_scheduled_sources(machine)
         now = timezone.now()
 
         out = {"machine": {"scheduled_sources": scheduled_sources}}
@@ -593,53 +593,33 @@ class ViewV1:
         # didn't exist, but would do nothing with it.
         out["scheduled_sources"] = scheduled_sources
 
-        m.date_checked_in = now
-        m.save()
+        machine.date_checked_in = now
+        machine.save()
         return HttpResponse(json.dumps(out), content_type="application/json")
 
     def agent_ping_restore(self):
-        if not (("machine" in self.req) and (isinstance(self.req["machine"], dict))):
-            raise HttpResponseException(
-                HttpResponseBadRequest('"machine" dict required')
-            )
-        req_machine = self.req["machine"]
-
-        # Make sure these exist in the request
-        for k in ("uuid", "secret"):
-            if k not in req_machine:
-                raise HttpResponseException(
-                    HttpResponseBadRequest('Missing required machine option "%s"' % k)
-                )
-
-        # Load the machine
-        try:
-            m = Machine.objects.get(uuid=req_machine["uuid"], active=True)
-        except Machine.DoesNotExist:
-            raise HttpResponseException(HttpResponseForbidden("Bad auth"))
-        if not hashers.check_password(req_machine["secret"], m.secret_hash):
-            raise HttpResponseException(HttpResponseForbidden("Bad auth"))
-
+        machine = self.machine_login()
         sources = {}
-        for s in m.source_set.filter(active=True):
-            sources[s.name] = {
-                "path": s.path,
-                "retention": s.retention,
-                "bwlimit": s.bwlimit,
-                "filter": self.build_filters(json.loads(s.filter)),
-                "exclude": json.loads(s.exclude),
-                "shared_service": s.shared_service,
-                "large_rotating_files": s.large_rotating_files,
-                "large_modifying_files": s.large_modifying_files,
-                "snapshot_mode": s.snapshot_mode,
-                "preserve_hard_links": s.preserve_hard_links,
+        for source in machine.source_set.filter(active=True):
+            sources[source.name] = {
+                "path": source.path,
+                "retention": source.retention,
+                "bwlimit": source.bwlimit,
+                "filter": self.build_filters(json.loads(source.filter)),
+                "exclude": json.loads(source.exclude),
+                "shared_service": source.shared_service,
+                "large_rotating_files": source.large_rotating_files,
+                "large_modifying_files": source.large_modifying_files,
+                "snapshot_mode": source.snapshot_mode,
+                "preserve_hard_links": source.preserve_hard_links,
                 "storage": {
-                    "name": s.machine.storage.name,
-                    "ssh_ping_host": s.machine.storage.ssh_ping_host,
+                    "name": source.machine.storage.name,
+                    "ssh_ping_host": source.machine.storage.ssh_ping_host,
                     "ssh_ping_host_keys": json.loads(
-                        s.machine.storage.ssh_ping_host_keys
+                        source.machine.storage.ssh_ping_host_keys
                     ),
-                    "ssh_ping_port": s.machine.storage.ssh_ping_port,
-                    "ssh_ping_user": s.machine.storage.ssh_ping_user,
+                    "ssh_ping_port": source.machine.storage.ssh_ping_port,
+                    "ssh_ping_user": source.machine.storage.ssh_ping_user,
                 },
             }
 
@@ -648,28 +628,28 @@ class ViewV1:
         return HttpResponse(json.dumps(out), content_type="application/json")
 
     def storage_ping_checkin(self):
-        self._storage_authenticate()
-        m = self._storage_get_machine()
+        storage = self.storage_login()
+        machine = self.storage_get_machine(storage)
 
-        scheduled_sources = self.get_checkin_scheduled_sources(m)
+        scheduled_sources = self.get_checkin_scheduled_sources(machine)
         now = timezone.now()
 
         out = {
             "machine": {
-                "uuid": m.uuid,
-                "environment_name": m.environment_name,
-                "service_name": m.service_name,
-                "unit_name": m.unit_name,
+                "uuid": machine.uuid,
+                "environment_name": machine.environment_name,
+                "service_name": machine.service_name,
+                "unit_name": machine.unit_name,
                 "scheduled_sources": scheduled_sources,
             }
         }
-        m.date_checked_in = now
-        m.save()
+        machine.date_checked_in = now
+        machine.save()
         return HttpResponse(json.dumps(out), content_type="application/json")
 
     def storage_ping_source_update(self):
-        self._storage_authenticate()
-        m = self._storage_get_machine()
+        storage = self.storage_login()
+        machine = self.storage_get_machine(storage)
 
         if "sources" not in self.req["machine"]:
             raise HttpResponseException(
@@ -678,87 +658,66 @@ class ViewV1:
         for source_name in self.req["machine"]["sources"]:
             source_data = self.req["machine"]["sources"][source_name]
             try:
-                s = m.source_set.get(name=source_name, active=True, published=True)
+                source = machine.source_set.get(
+                    name=source_name, active=True, published=True
+                )
             except Source.DoesNotExist:
                 raise HttpResponseException(HttpResponseNotFound("Source not found"))
             now = timezone.now()
             is_success = "success" in source_data and source_data["success"]
-            s.success = is_success
+            source.success = is_success
             if is_success:
-                s.date_last_backed_up = now
-                s.date_next_backup = frequency_next_scheduled(s.frequency, s.id, now)
-            s.save()
-            bl = BackupLog()
-            bl.source = s
-            bl.date = now
-            bl.storage = self.storage
-            bl.success = is_success
+                source.date_last_backed_up = now
+                source.date_next_backup = frequency_next_scheduled(
+                    source.frequency, source.id, now
+                )
+            source.save()
+            backup_log = BackupLog()
+            backup_log.source = source
+            backup_log.date = now
+            backup_log.storage = storage
+            backup_log.success = is_success
             if "snapshot" in source_data:
-                bl.snapshot = source_data["snapshot"]
+                backup_log.snapshot = source_data["snapshot"]
             if "summary" in source_data:
-                bl.summary = source_data["summary"]
+                backup_log.summary = source_data["summary"]
             if "time_begin" in source_data:
-                bl.date_begin = timezone.make_aware(
+                backup_log.date_begin = timezone.make_aware(
                     datetime.utcfromtimestamp(source_data["time_begin"]), timezone.utc
                 )
             if "time_end" in source_data:
-                bl.date_end = timezone.make_aware(
+                backup_log.date_end = timezone.make_aware(
                     datetime.utcfromtimestamp(source_data["time_end"]), timezone.utc
                 )
-            bl.save()
+            backup_log.save()
         return HttpResponse(json.dumps({}), content_type="application/json")
 
     def storage_update_config(self):
-        if not (("storage" in self.req) and (isinstance(self.req["storage"], dict))):
-            raise HttpResponseException(
-                HttpResponseBadRequest('"storage" dict required')
-            )
+        storage = self.storage_login(is_update_config=True)
         req_storage = self.req["storage"]
 
-        # Make sure these exist in the request (validation comes later)
-        for k in (
-            "name",
-            "secret",
-            "ssh_ping_host",
-            "ssh_ping_port",
-            "ssh_ping_user",
-            "ssh_ping_host_keys",
-        ):
-            if k not in req_storage:
-                raise HttpResponseException(
-                    HttpResponseBadRequest('Missing required storage option "%s"' % k)
-                )
-
-        # Create or load the storage
-        try:
-            self.storage = Storage.objects.get(name=req_storage["name"], active=True)
-            modified = False
-        except Storage.DoesNotExist:
-            self.storage = Storage(name=req_storage["name"])
-            self.storage.secret_hash = hashers.make_password(req_storage["secret"])
-            self.storage.auth = self.get_registration_auth("storage_reg")
+        modified = False
+        if storage is None:
+            # storage_login failed, so go ahead with creating a new Storage
+            # (but only if get_registration_auth doesn't raise)
+            storage = Storage(name=req_storage["name"])
+            storage.secret_hash = hashers.make_password(req_storage["secret"])
+            storage.auth = self.get_registration_auth("storage_reg")
             modified = True
-
-        # If the storage existed before, it had a secret.  Make sure that
-        # hasn't changed.
-        if not hashers.check_password(req_storage["secret"], self.storage.secret_hash):
-            raise HttpResponseException(
-                HttpResponseForbidden("Bad secret for existing storage")
-            )
 
         # Change the storage published status if needed
         if "published" in req_storage:
-            if req_storage["published"] != self.storage.published:
-                self.storage.published = req_storage["published"]
+            if req_storage["published"] != storage.published:
+                storage.published = req_storage["published"]
                 modified = True
         else:
             # If not present, default to want published
-            if not self.storage.published:
-                self.storage.published = True
+            if not storage.published:
+                storage.published = True
                 modified = True
 
         # If any of these exist in the request, add or update them in the
-        # self.storage.
+        # storage.
         for k in (
             "comment",
             "ssh_ping_host",
@@ -767,41 +726,41 @@ class ViewV1:
             "space_total",
             "space_available",
         ):
-            if (k in req_storage) and (getattr(self.storage, k) != req_storage[k]):
-                setattr(self.storage, k, req_storage[k])
+            if (k in req_storage) and (getattr(storage, k) != req_storage[k]):
+                setattr(storage, k, req_storage[k])
                 modified = True
 
         for k in ("ssh_ping_host_keys",):
             if k not in req_storage:
                 continue
             v = json.dumps(req_storage[k], sort_keys=True)
-            if getattr(self.storage, k) != v:
-                setattr(self.storage, k, v)
+            if getattr(storage, k) != v:
+                setattr(storage, k, v)
                 modified = True
 
         # Validate if modified
         if modified:
-            self.storage.date_updated = timezone.now()
+            storage.date_updated = timezone.now()
             try:
-                self.storage.full_clean()
+                storage.full_clean()
             except ValidationError as e:
                 raise HttpResponseException(
                     HttpResponseBadRequest("Validation error: %s" % str(e))
                 )
 
-        self.storage.date_checked_in = timezone.now()
-        self.storage.save()
+        storage.date_checked_in = timezone.now()
+        storage.save()
 
         machines = {}
-        for m in Machine.objects.filter(
-            storage=self.storage, active=True, published=True
+        for machine in Machine.objects.filter(
+            storage=storage, active=True, published=True
         ):
-            machines[m.uuid] = {
-                "environment_name": m.environment_name,
-                "service_name": m.service_name,
-                "unit_name": m.unit_name,
-                "comment": m.comment,
-                "ssh_public_key": m.ssh_public_key,
+            machines[machine.uuid] = {
+                "environment_name": machine.environment_name,
+                "service_name": machine.service_name,
+                "unit_name": machine.unit_name,
+                "comment": machine.comment,
+                "ssh_public_key": machine.ssh_public_key,
             }
         return HttpResponse(
             json.dumps({"machines": machines}), content_type="application/json"

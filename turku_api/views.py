@@ -207,6 +207,16 @@ class HttpResponseException(Exception):
 
 
 class ViewV1:
+    view_names = (
+        "health",
+        "update_config",
+        "agent_ping_checkin",
+        "agent_ping_restore",
+        "storage_ping_checkin",
+        "storage_ping_source_update",
+        "storage_update_config",
+    )
+
     def __init__(self, django_request):
         self.django_request = django_request
         self._parse_json_post()
@@ -789,48 +799,8 @@ def health(request):
 
 
 @csrf_exempt
-def update_config(request):
+def view_handler(request):
     try:
-        return ViewV1(request).update_config()
-    except HttpResponseException as e:
-        return e.message
-
-
-@csrf_exempt
-def agent_ping_checkin(request):
-    try:
-        return ViewV1(request).agent_ping_checkin()
-    except HttpResponseException as e:
-        return e.message
-
-
-@csrf_exempt
-def agent_ping_restore(request):
-    try:
-        return ViewV1(request).agent_ping_restore()
-    except HttpResponseException as e:
-        return e.message
-
-
-@csrf_exempt
-def storage_ping_checkin(request):
-    try:
-        return ViewV1(request).storage_ping_checkin()
-    except HttpResponseException as e:
-        return e.message
-
-
-@csrf_exempt
-def storage_ping_source_update(request):
-    try:
-        return ViewV1(request).storage_ping_source_update()
-    except HttpResponseException as e:
-        return e.message
-
-
-@csrf_exempt
-def storage_update_config(request):
-    try:
-        return ViewV1(request).storage_update_config()
+        return getattr(ViewV1(request), request.resolver_match.view_name).__call__()
     except HttpResponseException as e:
         return e.message

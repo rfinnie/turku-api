@@ -396,15 +396,18 @@ class ViewV1:
                 modified = True
 
         # Validate/save if modified
+        now = timezone.now()
         if modified:
-            machine.date_updated = timezone.now()
+            machine.date_updated = now
             try:
                 machine.full_clean()
             except ValidationError as e:
                 raise HttpResponseException(
                     HttpResponseBadRequest("Validation error: %s" % str(e))
                 )
-            machine.save()
+
+        machine.date_checked_in = now
+        machine.save()
 
         if "sources" in req_machine:
             req_sources = req_machine["sources"]

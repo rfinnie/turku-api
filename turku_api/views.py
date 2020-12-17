@@ -32,6 +32,11 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 try:
+    from django.urls import re_path
+except ImportError:
+    from django.conf.urls import url as re_path
+
+try:
     from turku_api.croniter_hash import croniter_hash
 except ImportError as e:
     # We only want to raise this import error if cron format is
@@ -803,7 +808,19 @@ def health(request):
 
 @csrf_exempt
 def view_handler(request):
+    namespace_map = {"v1": ViewV1}
     try:
-        return getattr(ViewV1(request), request.resolver_match.view_name).__call__()
+        namespace, name = request.resolver_match.view_name.split(":", 1)
+        return getattr(namespace_map[namespace](request), name).__call__()
     except HttpResponseException as e:
         return e.message
+
+
+urls = (
+    [
+        re_path(r"{}$".format(view_name), view_handler, name=view_name)
+        for view_name in ViewV1.view_names
+    ],
+    "turku_api",
+    "v1",
+)

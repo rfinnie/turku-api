@@ -35,11 +35,8 @@ admin.autodiscover()
 urlpatterns = [
     re_path(r"^$", RedirectView.as_view(url=reverse_lazy("admin:index"))),
     re_path(r"^admin/", admin.site.urls),
+    re_path(r"^v1/", views.urls),
 ]
-for view_name in views.ViewV1.view_names:
-    urlpatterns.append(
-        re_path(r"^v1/{}$".format(view_name), views.view_handler, name=view_name)
-    )
 
 try:
     from local_urls import *  # noqa: F401,F403

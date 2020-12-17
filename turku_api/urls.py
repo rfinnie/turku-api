@@ -14,7 +14,6 @@
 # License along with this program.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-from django.conf.urls import url
 from django.contrib import admin
 from django.views.generic.base import RedirectView
 
@@ -23,18 +22,23 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse_lazy  # pre-1.10
 
+try:
+    from django.urls import re_path
+except ImportError:
+    from django.conf.urls import url as re_path
+
 from turku_api import views
 
 
 admin.autodiscover()
 
 urlpatterns = [
-    url(r"^$", RedirectView.as_view(url=reverse_lazy("admin:index"))),
-    url(r"^admin/", admin.site.urls),
+    re_path(r"^$", RedirectView.as_view(url=reverse_lazy("admin:index"))),
+    re_path(r"^admin/", admin.site.urls),
 ]
 for view_name in views.ViewV1.view_names:
     urlpatterns.append(
-        url(r"^v1/{}$".format(view_name), views.view_handler, name=view_name)
+        re_path(r"^v1/{}$".format(view_name), views.view_handler, name=view_name)
     )
 
 try:

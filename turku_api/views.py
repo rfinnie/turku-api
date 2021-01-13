@@ -21,9 +21,13 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 try:
-    from django.urls import re_path
+    from django.urls import path
 except ImportError:
-    from django.conf.urls import url as re_path
+    from django.conf.urls import url as _legacy_url
+
+    def path(route, view, **kwargs):
+        return _legacy_url(r"^{}$".format(route), view, **kwargs)
+
 
 try:
     from turku_api.croniter_hash import croniter_hash
@@ -806,10 +810,7 @@ def view_handler(request):
 
 
 urls = (
-    [
-        re_path(r"{}$".format(view_name), view_handler, name=view_name)
-        for view_name in ViewV1.view_names
-    ],
+    [path(view_name, view_handler, name=view_name) for view_name in ViewV1.view_names],
     "turku_api",
     "v1",
 )

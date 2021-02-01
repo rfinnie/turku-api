@@ -1,7 +1,7 @@
 # croniter_hash - Extend croniter with hash/random support
 # Copyright (C) 2015-2020 Ryan Finnie
 #
-# SPDX-License-Identifer: MIT
+# SPDX-License-Identifier: MIT
 #
 # Originally from:
 # https://github.com/rfinnie/dsari

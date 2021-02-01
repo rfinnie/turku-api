@@ -3,7 +3,7 @@
 # Turku backups
 # Copyright (C) 2015-2020 Canonical Ltd., Ryan Finnie and other contributors
 #
-# SPDX-License-Identifer: AGPL-3.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 import datetime
 

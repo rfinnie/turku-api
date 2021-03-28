@@ -1,6 +1,5 @@
-# croniter_hash - Extend croniter with hash/random support
-# Copyright (C) 2015-2020 Ryan Finnie
-#
+# SPDX-PackageSummary: croniter_hash - Extend croniter with hash/random support
+# SPDX-FileCopyrightText: Copyright (C) 2015-2021 Ryan Finnie <ryan@finnie.org>
 # SPDX-License-Identifier: MIT
 #
 # Originally from:

@@ -24,5 +24,5 @@ setup(
     python_requires="~=3.4",
     packages=["turku_api", "turku_api.management.commands"],
     include_package_data=True,
-    install_requires=["Django"],
+    install_requires=["Django", "tzdata"],
 )

@@ -98,7 +98,7 @@ class Auth(models.Model):
         + "existing machines using its key from updating their configs.",
     )
     date_added = models.DateTimeField(
-        default=timezone.now, help_text="Date/time this auth was added."
+        default=timezone.localtime, help_text="Date/time this auth was added."
     )
 
     def __str__(self):
@@ -107,7 +107,7 @@ class Auth(models.Model):
 
 class Storage(models.Model):
     def healthy(self):
-        now = timezone.now()
+        now = timezone.localtime()
         if now <= (self.date_registered + timedelta(minutes=30)):
             # New registration, assume it's healthy
             return True
@@ -177,10 +177,11 @@ class Storage(models.Model):
         default=True, help_text="Whether this storage unit has been enabled by itself."
     )
     date_registered = models.DateTimeField(
-        default=timezone.now, help_text="Date/time this storage unit was registered."
+        default=timezone.localtime,
+        help_text="Date/time this storage unit was registered.",
     )
     date_updated = models.DateTimeField(
-        default=timezone.now,
+        default=timezone.localtime,
         help_text="Date/time this storage unit presented a modified config.",
     )
     date_checked_in = models.DateTimeField(
@@ -193,7 +194,7 @@ class Storage(models.Model):
 
 class Machine(models.Model):
     def healthy(self):
-        now = timezone.now()
+        now = timezone.localtime()
         if now <= (self.date_registered + timedelta(hours=1)):
             # New registration, assume it's healthy
             return True
@@ -263,10 +264,10 @@ class Machine(models.Model):
         help_text="Whether this machine has been enabled by the machine agent.",
     )
     date_registered = models.DateTimeField(
-        default=timezone.now, help_text="Date/time this machine was registered."
+        default=timezone.localtime, help_text="Date/time this machine was registered."
     )
     date_updated = models.DateTimeField(
-        default=timezone.now,
+        default=timezone.localtime,
         help_text="Date/time this machine presented a modified config.",
     )
     date_checked_in = models.DateTimeField(
@@ -279,7 +280,7 @@ class Machine(models.Model):
 
 class Source(models.Model):
     def healthy(self):
-        now = timezone.now()
+        now = timezone.localtime()
         if now <= (self.date_added + timedelta(hours=4)):
             # New addition, assume it's healthy
             return True
@@ -371,11 +372,11 @@ class Source(models.Model):
         help_text="Whether this source is actively being published by the machine agent.",
     )
     date_added = models.DateTimeField(
-        default=timezone.now,
+        default=timezone.localtime,
         help_text="Date/time this source was first added by the machine agent.",
     )
     date_updated = models.DateTimeField(
-        default=timezone.now,
+        default=timezone.localtime,
         help_text="Date/time the machine presented a modified config of this source.",
     )
     date_last_backed_up = models.DateTimeField(
@@ -384,7 +385,7 @@ class Source(models.Model):
         help_text="Date/time this source was last successfully backed up.",
     )
     date_next_backup = models.DateTimeField(
-        default=timezone.now,
+        default=timezone.localtime,
         help_text="Date/time this source is next scheduled to be backed up.  Set to now (or in the past) to "
         + "trigger a backup as soon as possible.",
     )
@@ -402,7 +403,7 @@ class BackupLog(models.Model):
         Source, on_delete=models.CASCADE, help_text="Source this log entry belongs to."
     )
     date = models.DateTimeField(
-        default=timezone.now,
+        default=timezone.localtime,
         help_text="Date/time this log entry was received/processed.",
     )
     storage = models.ForeignKey(
@@ -449,7 +450,7 @@ class FilterSet(models.Model):
         default=True, help_text="Whether this filter set is enabled."
     )
     date_added = models.DateTimeField(
-        default=timezone.now, help_text="Date/time this filter set was added."
+        default=timezone.localtime, help_text="Date/time this filter set was added."
     )
 
     def __str__(self):

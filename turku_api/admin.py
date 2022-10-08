@@ -41,7 +41,7 @@ def human_si(v, begin=0):
 def human_time(t):
     if t is None:
         return None
-    if abs(timezone.now() - t) >= datetime.timedelta(days=1):
+    if abs(timezone.localtime() - t) >= datetime.timedelta(days=1):
         return t
     else:
         return naturaltime(t)

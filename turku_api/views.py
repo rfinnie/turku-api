@@ -72,7 +72,8 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
         "cron R R(8-16) * * *"
     """
     if not base_time:
-        base_time = timezone.now()
+        base_time = timezone.localtime()
+    base_time = base_time.astimezone(timezone.get_current_timezone())
 
     if frequency.startswith("cron"):
         if isinstance(croniter_hash, ImportError):
@@ -391,7 +392,7 @@ class ViewV1:
                 modified = True
 
         # Validate/save if modified
-        now = timezone.now()
+        now = timezone.localtime()
         if modified:
             machine.date_updated = now
             try:
@@ -460,7 +461,7 @@ class ViewV1:
 
             if modified:
                 source.published = True
-                source.date_updated = timezone.now()
+                source.date_updated = timezone.localtime()
                 try:
                     source.full_clean()
                 except ValidationError as e:
@@ -562,7 +563,7 @@ class ViewV1:
 
     def get_checkin_scheduled_sources(self, m):
         scheduled_sources = {}
-        now = timezone.now()
+        now = timezone.localtime()
         for source in m.source_set.filter(
             date_next_backup__lte=now, active=True, published=True
         ):
@@ -592,7 +593,7 @@ class ViewV1:
     def agent_ping_checkin(self):
         machine = self.machine_login()
         scheduled_sources = self.get_checkin_scheduled_sources(machine)
-        now = timezone.now()
+        now = timezone.localtime()
 
         out = {"machine": {"scheduled_sources": scheduled_sources}}
 
@@ -640,7 +641,7 @@ class ViewV1:
         machine = self.storage_get_machine(storage)
 
         scheduled_sources = self.get_checkin_scheduled_sources(machine)
-        now = timezone.now()
+        now = timezone.localtime()
 
         out = {
             "machine": {
@@ -671,7 +672,7 @@ class ViewV1:
                 )
             except Source.DoesNotExist:
                 raise HttpResponseException(HttpResponseNotFound("Source not found"))
-            now = timezone.now()
+            now = timezone.localtime()
             is_success = "success" in source_data and source_data["success"]
             source.success = is_success
             if is_success:
@@ -691,11 +692,11 @@ class ViewV1:
                 backup_log.summary = source_data["summary"]
             if "time_begin" in source_data:
                 backup_log.date_begin = timezone.make_aware(
-                    datetime.utcfromtimestamp(source_data["time_begin"]), timezone.utc
+                    datetime.utcfromtimestamp(source_data["time_begin"])
                 )
             if "time_end" in source_data:
                 backup_log.date_end = timezone.make_aware(
-                    datetime.utcfromtimestamp(source_data["time_end"]), timezone.utc
+                    datetime.utcfromtimestamp(source_data["time_end"])
                 )
             backup_log.save()
         return HttpResponse(json.dumps({}), content_type="application/json")
@@ -748,7 +749,7 @@ class ViewV1:
 
         # Validate if modified
         if modified:
-            storage.date_updated = timezone.now()
+            storage.date_updated = timezone.localtime()
             try:
                 storage.full_clean()
             except ValidationError as e:
@@ -756,7 +757,7 @@ class ViewV1:
                     HttpResponseBadRequest("Validation error: %s" % str(e))
                 )
 
-        storage.date_checked_in = timezone.now()
+        storage.date_checked_in = timezone.localtime()
         storage.save()
 
         machines = {}
@@ -782,7 +783,7 @@ def health(request):
     # indicate the health of machines, storage units, etc.
     out = {
         "healthy": True,
-        "date": timezone.now().isoformat(),
+        "date": timezone.localtime().isoformat(),
         "repo_revision": get_repo_revision(),
         "counts": {
             "auth": Auth.objects.count(),

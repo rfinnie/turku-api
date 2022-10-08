@@ -89,14 +89,11 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
     f = [x.strip() for x in frequency.split(",")]
 
     if f[0] == "hourly":
-        target_time = (
-            base_time.replace(
-                minute=hashedint(0, 59, source_id),
-                second=hashedint(0, 59, source_id),
-                microsecond=0,
-            )
-            + timedelta(hours=1)
-        )
+        target_time = base_time.replace(
+            minute=hashedint(0, 59, source_id),
+            second=hashedint(0, 59, source_id),
+            microsecond=0,
+        ) + timedelta(hours=1)
         return target_time
 
     today = base_time.replace(hour=0, minute=0, second=0, microsecond=0)

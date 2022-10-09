@@ -177,23 +177,6 @@ def random_weighted(m):
             return k
 
 
-def get_repo_revision():
-    import os
-
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if os.path.isdir(os.path.join(base_dir, ".bzr")):
-        try:
-            import bzrlib.errors
-            from bzrlib.branch import Branch
-        except ImportError:
-            return None
-        try:
-            branch = Branch.open(base_dir)
-        except bzrlib.errors.NotBranchError:
-            return None
-        return branch.last_revision_info()[0]
-
-
 class HttpResponseException(Exception):
     def __init__(self, message):
         self.message = message
@@ -775,26 +758,23 @@ class ViewV1:
             json.dumps({"machines": machines}), content_type="application/json"
         )
 
-
-@csrf_exempt
-def health(request):
-    # This is a general purpose test of the API server (its ability
-    # to connect to its database and serve data).  It does not
-    # indicate the health of machines, storage units, etc.
-    out = {
-        "healthy": True,
-        "date": timezone.localtime().isoformat(),
-        "repo_revision": get_repo_revision(),
-        "counts": {
-            "auth": Auth.objects.count(),
-            "storage": Storage.objects.count(),
-            "machine": Machine.objects.count(),
-            "source": Source.objects.count(),
-            "filter_set": FilterSet.objects.count(),
-            "backup_log": BackupLog.objects.count(),
-        },
-    }
-    return HttpResponse(json.dumps(out), content_type="application/json")
+    def health(self):
+        # This is a general purpose test of the API server (its ability
+        # to connect to its database and serve data).  It does not
+        # indicate the health of machines, storage units, etc.
+        out = {
+            "healthy": True,
+            "date": timezone.localtime().isoformat(),
+            "counts": {
+                "auth": Auth.objects.count(),
+                "storage": Storage.objects.count(),
+                "machine": Machine.objects.count(),
+                "source": Source.objects.count(),
+                "filter_set": FilterSet.objects.count(),
+                "backup_log": BackupLog.objects.count(),
+            },
+        }
+        return HttpResponse(json.dumps(out), content_type="application/json")
 
 
 @csrf_exempt

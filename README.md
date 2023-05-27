@@ -20,9 +20,9 @@ turku-api has the following models:
 
 ## Installation
 
-turku-api is a standard Django application; please see [Django's installation guide](https://docs.djangoproject.com/en/1.11/topics/install/) for setting up an application.  Django 1.6 (Ubuntu Trusty era) through Django 2.2 (Ubuntu Focal era) have been tested.
+turku-api is a standard Django application; please see [Django's installation guide](https://docs.djangoproject.com/en/1.11/topics/install/) for setting up an application.
 
-turku-api requires Python 3.  The following optional Python modules can also be installed:
+turku-api requires Python 3, Django, and tzdata.  The following optional Python modules can also be installed:
 
 * croniter, for cron-style scheduling definitions
 
@@ -30,13 +30,21 @@ It is highly recommended to serve turku-api over HTTPS, as registration and agen
 
 turku-api's default configuration will use a SQLite database.  This is fine for small installations, but it's recommended to use a PostgreSQL/MySQL database for larger installations.
 
-Besides database configuration, turku-api's default Django settings are adequate.  The only recommended change is an installation-specific Django SECRET_KEY.  Create ```turku_api/local_settings.py``` with:
+Besides database configuration, turku-api's default Django settings are adequate.  The only recommended change is an installation-specific Django SECRET_KEY.  Create `turku_api_settings.py` with:
 
-```
+```python
+from turku_api.settings import *
+
 SECRET_KEY = 'long random key string'
 ```
 
-Any other changes to ```turku_api/settings.py``` should be put in ```turku_api/local_settings.py``` as well.
+Any other changes to `turku_api/settings.py` should be put in `turku_api_settings.py` as well.  To use, invoke the WSGI handler with, for example:
+
+```shell
+export DJANGO_SETTINGS_MODULE=turku_api_settings
+export PYTHONPATH=/path/to/local/settings
+gunicorn -b 0.0.0.0:8000 -k gthread turku_api.wsgi:application
+```
 
 Getting the admin web site working is recommended, but not required.
 

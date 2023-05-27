@@ -168,11 +168,11 @@ def random_weighted(m):
         return random.choice(list(m.keys()))
     weighted = []
     tp = 0
-    for (k, v) in m.items():
+    for k, v in m.items():
         tp = tp + (float(v) / float(total))
         weighted.append((k, tp))
     r = random.random()
-    for (k, v) in weighted:
+    for k, v in weighted:
         if r < v:
             return k
 

@@ -29,3 +29,13 @@ jobs:
       with:
         name: sdist-${{ github.job }}-${{ github.run_id }}.${{ github.run_number }}-${{ runner.os }}-py${{ matrix.python-version }}
         path: .tox/dist/*.zip
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Docker build
+      run: docker image build -t turku-api:latest .
+    - name: Container check
+      run: |
+        docker run --rm turku-api:latest django-admin check
+        docker run --rm turku-api:latest django-admin test

@@ -61,8 +61,3 @@ DATABASES = {
 SECRET_KEY = "".join(
     random.choice(string.ascii_letters + string.digits) for i in range(30)
 )
-
-try:
-    from turku_api.local_settings import *  # noqa: F401,F403
-except ImportError:
-    pass

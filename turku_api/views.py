@@ -434,6 +434,16 @@ class ViewV1:
                             req_sources[source.name][k], source.id
                         )
                     modified = True
+                if (
+                    k in ("large_rotating_files", "large_modifying_files")
+                    and k in req_sources[source.name]
+                    and req_sources[source.name][k]
+                    and "snapshot_mode" not in req_sources[source.name]
+                ):
+                    # The request specified large modifying or rotating files, but not snapshot mode.
+                    # Default to link-dest, to save space wherever possible.
+                    setattr(source, "snapshot_mode", "link-dest")
+
             for k in ("filter", "exclude"):
                 if k not in req_sources[source.name]:
                     continue

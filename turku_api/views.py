@@ -300,25 +300,17 @@ class ViewV1:
         return machine
 
     def get_registration_auth(self, secret_type):
-        # Check for global auth
-        if "auth" not in self.req:
+        auth_req = self.req.get("auth", {})
+        if (not auth_req.get("name")) or (not auth_req.get("secret")):
             raise HttpResponseException(HttpResponseForbidden("Bad auth"))
-        if isinstance(self.req["auth"], dict):
-            if not (("name" in self.req["auth"]) and ("secret" in self.req["auth"])):
-                raise HttpResponseException(HttpResponseForbidden("Bad auth"))
-            try:
-                a = Auth.objects.get(
-                    name=self.req["auth"]["name"], secret_type=secret_type, active=True
-                )
-            except Auth.DoesNotExist:
-                raise HttpResponseException(HttpResponseForbidden("Bad auth"))
-            if hashers.check_password(self.req["auth"]["secret"], a.secret_hash):
-                return a
-        else:
-            # XXX inefficient but temporary (legacy)
-            for a in Auth.objects.filter(secret_type=secret_type, active=True):
-                if hashers.check_password(self.req["auth"], a.secret_hash):
-                    return a
+        try:
+            a = Auth.objects.get(
+                name=auth_req["name"], secret_type=secret_type, active=True
+            )
+        except Auth.DoesNotExist:
+            raise HttpResponseException(HttpResponseForbidden("Bad auth"))
+        if hashers.check_password(auth_req["secret"], a.secret_hash):
+            return a
         raise HttpResponseException(HttpResponseForbidden("Bad auth"))
 
     def update_config(self):
@@ -388,21 +380,11 @@ class ViewV1:
         machine.date_checked_in = now
         machine.save()
 
-        if "sources" in req_machine:
-            req_sources = req_machine["sources"]
-            if not isinstance(req_sources, dict):
-                raise HttpResponseException(
-                    HttpResponseBadRequest('Invalid type for "sources"')
-                )
-        elif "sources" in self.req:
-            # XXX legacy
-            req_sources = self.req["sources"]
-            if not isinstance(req_sources, dict):
-                raise HttpResponseException(
-                    HttpResponseBadRequest('Invalid type for "sources"')
-                )
-        else:
-            req_sources = {}
+        req_sources = req_machine.get("sources", {})
+        if not isinstance(req_sources, dict):
+            raise HttpResponseException(
+                HttpResponseBadRequest('Invalid type for "sources"')
+            )
 
         sources_in_db = []
         for source in machine.source_set.all():
@@ -494,15 +476,7 @@ class ViewV1:
                 )
             source.save()
 
-        # XXX legacy
-        out = {
-            "storage_name": machine.storage.name,
-            "ssh_ping_host": machine.storage.ssh_ping_host,
-            "ssh_ping_host_keys": json.loads(machine.storage.ssh_ping_host_keys),
-            "ssh_ping_port": machine.storage.ssh_ping_port,
-            "ssh_ping_user": machine.storage.ssh_ping_user,
-        }
-        return HttpResponse(json.dumps(out), content_type="application/json")
+        return HttpResponse(json.dumps({}), content_type="application/json")
 
     def build_filters(self, set, loaded_sets=None):
         if not loaded_sets:
@@ -579,11 +553,6 @@ class ViewV1:
         now = timezone.localtime()
 
         out = {"machine": {"scheduled_sources": scheduled_sources}}
-
-        # Legacy: data hasn't been used since 2015.  However, turku-agent
-        # until 2020-09-30 would check for this key and would exit if it
-        # didn't exist, but would do nothing with it.
-        out["scheduled_sources"] = scheduled_sources
 
         machine.date_checked_in = now
         machine.save()

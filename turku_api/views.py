@@ -329,25 +329,26 @@ class ViewV1:
     def update_config(self):
         machine = self.machine_login(is_update_config=True)
         req_machine = self.req["machine"]
-        modified = False
+        modified = []
+        new_machine = False
         if machine is None:
             # machine_login failed, so go ahead with creating a new Machine
             # (but only if get_registration_auth doesn't raise)
             machine = Machine(uuid=req_machine["uuid"])
             machine.secret_hash = hashers.make_password(req_machine["secret"])
             machine.auth = self.get_registration_auth("machine_reg")
-            modified = True
+            new_machine = True
 
         # Change the machine published status if needed
         if "published" in req_machine:
             if req_machine["published"] != machine.published:
                 machine.published = req_machine["published"]
-                modified = True
+                modified.append("published")
         else:
             # If not present, default to want published
             if not machine.published:
                 machine.published = True
-                modified = True
+                modified.append("published")
 
         new_storage_needed = False
         try:
@@ -360,7 +361,7 @@ class ViewV1:
                 for storage in Storage.objects.filter(active=True, published=True):
                     weights[storage] = storage.space_available
                 machine.storage = random_weighted(weights)
-                modified = True
+                modified.append("storage")
             except IndexError:
                 raise HttpResponseException(
                     HttpResponseNotFound("No storages are currently available")
@@ -377,21 +378,25 @@ class ViewV1:
         ):
             if (k in req_machine) and (getattr(machine, k) != req_machine[k]):
                 setattr(machine, k, req_machine[k])
-                modified = True
+                modified.append(k)
 
         # Validate/save if modified
         now = timezone.localtime()
         if modified:
             machine.date_updated = now
+            modified.append("date_updated")
             try:
                 machine.full_clean()
             except ValidationError as e:
                 raise HttpResponseException(
                     HttpResponseBadRequest("Validation error: %s" % str(e))
                 )
-
         machine.date_checked_in = now
-        machine.save()
+        modified.append("date_checked_in")
+        if new_machine:
+            machine.save()
+        elif modified:
+            machine.save(update_fields=(modified + ["date_checked_in"]))
 
         req_sources = req_machine.get("sources", {})
         if not isinstance(req_sources, dict):
@@ -403,11 +408,11 @@ class ViewV1:
         for source in machine.source_set.all():
             if source.name not in req_sources:
                 source.published = False
-                source.save()
+                source.save(update_fields=["published"])
                 continue
             sources_in_db.append(source.name)
 
-            modified = False
+            modified = []
             for k in (
                 "path",
                 "frequency",
@@ -428,25 +433,27 @@ class ViewV1:
                         source.date_next_backup = frequency_next_scheduled(
                             req_sources[source.name][k], source.id
                         )
-                    modified = True
+                    modified.append(k)
             for k in ("filter", "exclude"):
                 if k not in req_sources[source.name]:
                     continue
                 v = json.dumps(req_sources[source.name][k], sort_keys=True)
                 if getattr(source, k) != v:
                     setattr(source, k, v)
-                    modified = True
+                    modified.append(k)
 
             if modified:
                 source.published = True
+                modified.append("published")
                 source.date_updated = timezone.localtime()
+                modified.append("date_updated")
                 try:
                     source.full_clean()
                 except ValidationError as e:
                     raise HttpResponseException(
                         HttpResponseBadRequest("Validation error: %s" % str(e))
                     )
-                source.save()
+                source.save(update_fields=modified)
 
         for source_name in req_sources:
             if source_name in sources_in_db:
@@ -568,7 +575,7 @@ class ViewV1:
         out = {"machine": {"scheduled_sources": scheduled_sources}}
 
         machine.date_checked_in = now
-        machine.save()
+        machine.save(update_fields=["date_checked_in"])
         return HttpResponse(json.dumps(out), content_type="application/json")
 
     def agent_ping_restore(self):
@@ -618,7 +625,7 @@ class ViewV1:
             }
         }
         machine.date_checked_in = now
-        machine.save()
+        machine.save(update_fields=["date_checked_in"])
         return HttpResponse(json.dumps(out), content_type="application/json")
 
     def storage_ping_source_update(self):
@@ -645,7 +652,7 @@ class ViewV1:
                 source.date_next_backup = frequency_next_scheduled(
                     source.frequency, source.id, now
                 )
-            source.save()
+            source.save(update_fields=["date_last_backed_up", "date_next_backup"])
             backup_log = BackupLog()
             backup_log.source = source
             backup_log.date = now
@@ -670,25 +677,26 @@ class ViewV1:
         storage = self.storage_login(is_update_config=True)
         req_storage = self.req["storage"]
 
-        modified = False
+        modified = []
+        new_storage = False
         if storage is None:
             # storage_login failed, so go ahead with creating a new Storage
             # (but only if get_registration_auth doesn't raise)
             storage = Storage(name=req_storage["name"])
             storage.secret_hash = hashers.make_password(req_storage["secret"])
             storage.auth = self.get_registration_auth("storage_reg")
-            modified = True
+            new_storage = True
 
         # Change the storage published status if needed
         if "published" in req_storage:
             if req_storage["published"] != storage.published:
                 storage.published = req_storage["published"]
-                modified = True
+                modified.append("published")
         else:
             # If not present, default to want published
             if not storage.published:
                 storage.published = True
-                modified = True
+                modified.append("published")
 
         # If any of these exist in the request, add or update them in the
         # storage.
@@ -702,7 +710,7 @@ class ViewV1:
         ):
             if (k in req_storage) and (getattr(storage, k) != req_storage[k]):
                 setattr(storage, k, req_storage[k])
-                modified = True
+                modified.append(k)
 
         for k in ("ssh_ping_host_keys",):
             if k not in req_storage:
@@ -710,20 +718,25 @@ class ViewV1:
             v = json.dumps(req_storage[k], sort_keys=True)
             if getattr(storage, k) != v:
                 setattr(storage, k, v)
-                modified = True
+                modified.append(k)
 
-        # Validate if modified
+        # Validate/save if modified
+        now = timezone.localtime()
         if modified:
-            storage.date_updated = timezone.localtime()
+            storage.date_updated = now
+            modified.append("date_updated")
             try:
                 storage.full_clean()
             except ValidationError as e:
                 raise HttpResponseException(
                     HttpResponseBadRequest("Validation error: %s" % str(e))
                 )
-
-        storage.date_checked_in = timezone.localtime()
-        storage.save()
+        storage.date_checked_in = now
+        modified.append("date_checked_in")
+        if new_storage:
+            storage.save()
+        elif modified:
+            storage.save(update_fields=(modified + ["date_checked_in"]))
 
         machines = {}
         for machine in Machine.objects.filter(

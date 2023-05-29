@@ -3,8 +3,10 @@
 # SPDX-FileCopyrightText: Copyright (C) 2015-2021 Ryan Finnie <ryan@finnie.org>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import collections
 from datetime import timedelta
 import json
+import math
 import uuid
 
 from django.db import models
@@ -18,10 +20,28 @@ def new_uuid():
     return str(uuid.uuid4())
 
 
+def shannon_entropy(input):
+    input_len = len(input)
+    val = 0
+    for item in collections.Counter(input).values():
+        p = item / input_len
+        val += p * math.log(p, 2)
+    return val * -1
+
+
 def validate_uuid(value):
     try:
-        str(uuid.UUID(value))
+        u = uuid.UUID(value)
     except ValueError:
+        raise ValidationError("Invalid UUID format")
+    if u.version is None:
+        raise ValidationError("Invalid UUID format")
+    # The client provides the machine UUID, but we can at least make sure
+    # it doesn't look totally fake. Statistically likely a true UUID will
+    # never have an entropy distribution of < 0.95.
+    uuid_bits = format(u.int, "#0130b")[2:]
+    uuid_unique_bits = uuid_bits[0:48] + uuid_bits[52:64] + uuid_bits[67:128]
+    if shannon_entropy([x for x in uuid_unique_bits]) < 0.95:
         raise ValidationError("Invalid UUID format")
 
 

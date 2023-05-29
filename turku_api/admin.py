@@ -7,6 +7,7 @@ import datetime
 
 from django import forms
 from django.contrib import admin
+from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.contrib.humanize.templatetags.humanize import naturaltime
 from django.utils import timezone
 from django.utils.html import format_html
@@ -74,6 +75,8 @@ class CustomModelAdmin(admin.ModelAdmin):
 
 
 class MachineAdminForm(forms.ModelForm):
+    secret_hash = ReadOnlyPasswordHashField()
+
     class Meta:
         model = Machine
         fields = "__all__"
@@ -84,6 +87,8 @@ class MachineAdminForm(forms.ModelForm):
 
 
 class StorageAdminForm(forms.ModelForm):
+    secret_hash = ReadOnlyPasswordHashField()
+
     class Meta:
         model = Storage
         fields = "__all__"
@@ -93,7 +98,16 @@ class StorageAdminForm(forms.ModelForm):
         self.fields["auth"].queryset = Auth.objects.filter(secret_type="storage_reg")
 
 
+class AuthAdminForm(forms.ModelForm):
+    secret_hash = ReadOnlyPasswordHashField()
+
+    class Meta:
+        model = Auth
+        fields = "__all__"
+
+
 class AuthAdmin(CustomModelAdmin):
+    form = AuthAdminForm
     list_display = ("name", "secret_type", "date_added", "active")
     ordering = ("name",)
     search_fields = ("name", "comment")

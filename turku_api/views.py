@@ -177,6 +177,11 @@ def random_weighted(m):
             return k
 
 
+def hash_setter(obj, password):
+    obj.secret_hash = hashers.make_password(password)
+    obj.save(update_fields=["secret_hash"])
+
+
 class HttpResponseException(Exception):
     def __init__(self, message):
         self.message = message
@@ -236,7 +241,9 @@ class ViewV1:
             else:
                 raise HttpResponseException(HttpResponseForbidden("Bad auth"))
         if not hashers.check_password(
-            self.req["storage"]["secret"], storage.secret_hash
+            self.req["storage"]["secret"],
+            storage.secret_hash,
+            setter=lambda password: hash_setter(storage, password),
         ):
             raise HttpResponseException(HttpResponseForbidden("Bad auth"))
 
@@ -293,7 +300,9 @@ class ViewV1:
         if (not is_update_config) and (not machine.published):
             raise HttpResponseException(HttpResponseForbidden("Bad auth"))
         if not hashers.check_password(
-            self.req["machine"]["secret"], machine.secret_hash
+            self.req["machine"]["secret"],
+            machine.secret_hash,
+            setter=lambda password: hash_setter(machine, password),
         ):
             raise HttpResponseException(HttpResponseForbidden("Bad auth"))
 
@@ -309,7 +318,11 @@ class ViewV1:
             )
         except Auth.DoesNotExist:
             raise HttpResponseException(HttpResponseForbidden("Bad auth"))
-        if hashers.check_password(auth_req["secret"], a.secret_hash):
+        if hashers.check_password(
+            auth_req["secret"],
+            a.secret_hash,
+            setter=lambda password: hash_setter(a, password),
+        ):
             return a
         raise HttpResponseException(HttpResponseForbidden("Bad auth"))
 

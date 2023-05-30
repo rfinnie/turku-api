@@ -8,6 +8,13 @@ from datetime import datetime, timedelta
 import json
 import random
 
+try:
+    import croniter
+except ImportError as e:
+    # We only want to raise this import error if cron format is
+    # attempted by the client
+    croniter = e
+
 from django.contrib.auth import hashers
 from django.core.exceptions import ValidationError
 from django.http import (
@@ -28,13 +35,6 @@ except ImportError:
     def path(route, view, **kwargs):
         return _legacy_url(r"^{}$".format(route), view, **kwargs)
 
-
-try:
-    from turku_api.croniter_hash import croniter_hash
-except ImportError as e:
-    # We only want to raise this import error if cron format is
-    # attempted by the client
-    croniter_hash = e
 
 from turku_api.models import Auth, BackupLog, FilterSet, Machine, Source, Storage
 
@@ -76,13 +76,11 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
     base_time = base_time.astimezone(timezone.get_current_timezone())
 
     if frequency.startswith("cron"):
-        if isinstance(croniter_hash, ImportError):
+        if isinstance(croniter, ImportError):
             # croniter is not installed
-            raise croniter_hash
+            raise croniter
         cron_schedule = " ".join(frequency.split(" ")[1:])
-        croniter_def = croniter_hash(
-            cron_schedule, start_time=base_time, hash_id=source_id
-        )
+        croniter_def = croniter(cron_schedule, start_time=base_time, hash_id=source_id)
         return croniter_def.get_next(datetime).replace(
             second=hashedint(0, 59, source_id)
         )

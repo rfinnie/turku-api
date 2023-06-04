@@ -440,9 +440,10 @@ class ViewV1:
                     setattr(source, k, v)
                     modified.append(k)
 
-            if modified:
+            if not source.published:
                 source.published = True
                 modified.append("published")
+            if modified:
                 source.date_updated = timezone.localtime()
                 modified.append("date_updated")
                 try:

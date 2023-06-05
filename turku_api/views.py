@@ -7,6 +7,7 @@ import binascii
 from datetime import datetime, timedelta
 import json
 import random
+import uuid
 
 try:
     import croniter
@@ -262,7 +263,7 @@ class ViewV1:
         # Create or load the machine
         try:
             return Machine.objects.get(
-                uuid=self.req["machine"]["uuid"],
+                uuid=uuid.UUID(self.req["machine"]["uuid"]),
                 storage=storage,
                 active=True,
                 published=True,
@@ -287,7 +288,9 @@ class ViewV1:
 
         # Load the machine
         try:
-            machine = Machine.objects.get(uuid=self.req["machine"]["uuid"], active=True)
+            machine = Machine.objects.get(
+                uuid=uuid.UUID(self.req["machine"]["uuid"]), active=True
+            )
         except Machine.DoesNotExist:
             if is_update_config:
                 return
@@ -332,7 +335,7 @@ class ViewV1:
         if machine is None:
             # machine_login failed, so go ahead with creating a new Machine
             # (but only if get_registration_auth doesn't raise)
-            machine = Machine(uuid=req_machine["uuid"])
+            machine = Machine(uuid=uuid.UUID(req_machine["uuid"]))
             machine.secret_hash = hashers.make_password(req_machine["secret"])
             machine.auth = self.get_registration_auth("machine_reg")
             new_machine = True
@@ -429,7 +432,7 @@ class ViewV1:
                     setattr(source, k, req_sources[source.name][k])
                     if k == "frequency":
                         source.date_next_backup = frequency_next_scheduled(
-                            req_sources[source.name][k], source.id
+                            req_sources[source.name][k], str(source.id)
                         )
                     modified.append(k)
             for k in ("filter", "exclude"):
@@ -484,7 +487,7 @@ class ViewV1:
 
             # New source, so schedule it regardless
             source.date_next_backup = frequency_next_scheduled(
-                source.frequency, source.id
+                source.frequency, str(source.id)
             )
 
             try:
@@ -616,7 +619,7 @@ class ViewV1:
 
         out = {
             "machine": {
-                "uuid": machine.uuid,
+                "uuid": str(machine.uuid),
                 "environment_name": machine.environment_name,
                 "service_name": machine.service_name,
                 "unit_name": machine.unit_name,
@@ -649,7 +652,7 @@ class ViewV1:
             if is_success:
                 source.date_last_backed_up = now
                 source.date_next_backup = frequency_next_scheduled(
-                    source.frequency, source.id, now
+                    source.frequency, str(source.id), now
                 )
             source.save(update_fields=["date_last_backed_up", "date_next_backup"])
             backup_log = BackupLog()
@@ -741,7 +744,7 @@ class ViewV1:
         for machine in Machine.objects.filter(
             storage=storage, active=True, published=True
         ):
-            machines[machine.uuid] = {
+            machines[str(machine.uuid)] = {
                 "environment_name": machine.environment_name,
                 "service_name": machine.service_name,
                 "unit_name": machine.unit_name,

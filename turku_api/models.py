@@ -16,10 +16,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
 
 
-def new_uuid():
-    return str(uuid.uuid4())
-
-
 def shannon_entropy(input):
     input_len = len(input)
     val = 0
@@ -29,10 +25,8 @@ def shannon_entropy(input):
     return val * -1
 
 
-def validate_uuid(value):
-    try:
-        u = uuid.UUID(value)
-    except ValueError:
+def validate_uuid(u):
+    if not isinstance(u, uuid.UUID):
         raise ValidationError("Invalid UUID format")
     if u.version is None:
         raise ValidationError("Invalid UUID format")
@@ -80,22 +74,14 @@ def validate_machine_auth(value):
         raise ValidationError("Must be a Machine registration")
 
 
-class UuidPrimaryKeyField(models.CharField):
-    def __init__(self, *args, **kwargs):
-        kwargs["blank"] = True
-        kwargs["default"] = new_uuid
-        kwargs["editable"] = False
-        kwargs["max_length"] = 36
-        kwargs["primary_key"] = True
-        super(UuidPrimaryKeyField, self).__init__(*args, **kwargs)
-
-
 class Auth(models.Model):
     SECRET_TYPES = (
         ("machine_reg", "Machine registration"),
         ("storage_reg", "Storage registration"),
     )
-    id = UuidPrimaryKeyField()
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
+    )
     name = models.CharField(
         max_length=200, unique=True, help_text="Human-readable name of this auth."
     )
@@ -137,7 +123,9 @@ class Storage(models.Model):
 
     healthy.boolean = True
 
-    id = UuidPrimaryKeyField()
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
+    )
     name = models.CharField(
         max_length=200,
         unique=True,
@@ -224,9 +212,11 @@ class Machine(models.Model):
 
     healthy.boolean = True
 
-    id = UuidPrimaryKeyField()
-    uuid = models.CharField(
-        max_length=36,
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
+    )
+
+    uuid = models.UUIDField(
         unique=True,
         validators=[validate_uuid],
         verbose_name="UUID",
@@ -295,7 +285,7 @@ class Machine(models.Model):
     )
 
     def __str__(self):
-        return "%s (%s)" % (self.unit_name, self.uuid[0:8])
+        return "%s (%s)" % (self.unit_name, str(self.uuid)[0:8])
 
 
 class Source(models.Model):
@@ -314,7 +304,9 @@ class Source(models.Model):
         ("none", "No snapshotting"),
         ("link-dest", "Hardlink trees (rsync --link-dest)"),
     )
-    id = UuidPrimaryKeyField()
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
+    )
     name = models.CharField(
         max_length=200, help_text="Computer-readable source name identifier."
     )
@@ -418,7 +410,9 @@ class Source(models.Model):
 
 
 class BackupLog(models.Model):
-    id = UuidPrimaryKeyField()
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
+    )
     source = models.ForeignKey(
         Source, on_delete=models.CASCADE, help_text="Source this log entry belongs to."
     )
@@ -454,7 +448,9 @@ class BackupLog(models.Model):
 
 
 class FilterSet(models.Model):
-    id = UuidPrimaryKeyField()
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
+    )
     name = models.CharField(
         max_length=200, unique=True, help_text="Name of this filter set."
     )

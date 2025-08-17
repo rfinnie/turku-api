@@ -25,9 +25,5 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        for backuplog in BackupLog.objects.filter(
-            date_end__lt=(
-                timezone.localtime() - datetime.timedelta(days=options["days"])
-            )
-        ):
+        for backuplog in BackupLog.objects.filter(date_end__lt=(timezone.localtime() - datetime.timedelta(days=options["days"]))):
             backuplog.delete()

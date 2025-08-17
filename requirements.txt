@@ -1,4 +1,0 @@
-Django
-django[argon2]
-croniter
-tzdata

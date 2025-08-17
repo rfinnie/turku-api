@@ -1,0 +1,27 @@
+# SPDX-PackageSummary: Turku backups - API server
+# SPDX-FileCopyrightText: Copyright (C) 2015-2020 Canonical Ltd.
+# SPDX-FileCopyrightText: Copyright (C) 2015-2025 Ryan Finnie <ryan@finnie.org>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+name: "Build and push registry"
+"on":
+  workflow_dispatch:
+  push:
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v4"
+      - name: "Log in to registry"
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: "Build image"
+        run: "docker image build -t build:ci ."
+      - name: "Container check"
+        run: |
+          docker run --rm build:ci django-admin check
+          docker run --rm build:ci django-admin test
+      - name: "Push image"
+        run: |
+          docker image tag build:ci ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          docker image push ghcr.io/${{ github.repository }}:${{ github.ref_name }}

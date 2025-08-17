@@ -1,9 +1,5 @@
-include Makefile
-include manage.py
-include MANIFEST.in
-include README.md
-include LICENSE.md
-include requirements.txt
-include tests/*.py
-include tox.ini
-include turku_api/templates/admin/*.html
+# SPDX-PackageSummary: Turku backups - API server
+# SPDX-FileCopyrightText: Copyright (C) 2015-2020 Canonical Ltd.
+# SPDX-FileCopyrightText: Copyright (C) 2015-2025 Ryan Finnie <ryan@finnie.org>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+recursive-include turku_api/templates *

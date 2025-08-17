@@ -21,12 +21,8 @@ class Command(BaseCommand):
             choices=("machine_reg", "storage_reg"),
             help="Secret type to create",
         )
-        parser.add_argument(
-            "--name", type=str, default=None, help="Name assigned to secret"
-        )
-        parser.add_argument(
-            "--raw", action="store_true", help="Output created secret directly"
-        )
+        parser.add_argument("--name", type=str, default=None, help="Name assigned to secret")
+        parser.add_argument("--raw", action="store_true", help="Output created secret directly")
 
     def handle(self, *args, **options):
         if options["name"] is None:
@@ -46,8 +42,4 @@ class Command(BaseCommand):
         if options["raw"]:
             self.stdout.write(secret)
         else:
-            self.stdout.write(
-                "New registration secret created: {} ({})".format(
-                    secret, options["name"]
-                )
-            )
+            self.stdout.write("New registration secret created: {} ({})".format(secret, options["name"]))

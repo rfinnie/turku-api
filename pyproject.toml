@@ -1,0 +1,37 @@
+# SPDX-PackageSummary: Turku backups - API server
+# SPDX-FileCopyrightText: Copyright (C) 2015-2020 Canonical Ltd.
+# SPDX-FileCopyrightText: Copyright (C) 2015-2025 Ryan Finnie <ryan@finnie.org>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[project]
+name = "turku-api"
+authors = [
+    {name = "Ryan Finnie", email = "ryan@finnie.org"},
+]
+description = "Turku backups - API application"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "AGPL-3.0-or-later"}
+dependencies = [
+    "Django",
+    "django[argon2]",
+    "croniter",
+    "tzdata",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+gunicorn = ["gunicorn"]
+
+[tool.setuptools.packages.find]
+include = [
+    "turku_api",
+    "turku_api.management.commands",
+    "turku_api.tests",
+]
+
+[tool.black]
+line-length = 132
+
+# https://pypi.org/project/Flake8-pyproject/
+[tool.flake8]
+max-line-length = 132

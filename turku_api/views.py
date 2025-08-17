@@ -82,9 +82,7 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
             raise croniter
         cron_schedule = " ".join(frequency.split(" ")[1:])
         croniter_def = croniter(cron_schedule, start_time=base_time, hash_id=source_id)
-        return croniter_def.get_next(datetime).replace(
-            second=hashedint(0, 59, source_id)
-        )
+        return croniter_def.get_next(datetime).replace(second=hashedint(0, 59, source_id))
 
     f = [x.strip() for x in frequency.split(",")]
 
@@ -103,12 +101,7 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
     elif f[0] == "weekly":
         # Hashed day next week
         target_day = hashedint(0, 6, source_id)
-        target_date = (
-            today
-            + timedelta(weeks=1)
-            - timedelta(days=((today.weekday() + 1) % 7))
-            + timedelta(days=target_day)
-        )
+        target_date = today + timedelta(weeks=1) - timedelta(days=((today.weekday() + 1) % 7)) + timedelta(days=target_day)
     elif f[0] in (
         "sunday",
         "monday",
@@ -129,19 +122,13 @@ def frequency_next_scheduled(frequency, source_id, base_time=None):
             "saturday": 6,
         }
         target_day = day_map[f[0]]
-        target_date = (
-            today
-            - timedelta(days=((today.weekday() + 1) % 7))
-            + timedelta(days=target_day)
-        )
+        target_date = today - timedelta(days=((today.weekday() + 1) % 7)) + timedelta(days=target_day)
         if target_date < today:
             target_date = target_date + timedelta(weeks=1)
     elif f[0] == "monthly":
         next_month = (today.replace(day=1) + timedelta(days=40)).replace(day=1)
         month_after = (next_month.replace(day=1) + timedelta(days=40)).replace(day=1)
-        target_date = next_month + timedelta(
-            days=hashedint(1, (month_after - next_month).days, source_id)
-        )
+        target_date = next_month + timedelta(days=hashedint(1, (month_after - next_month).days, source_id))
     else:
         # Fall back to daily
         target_date = today + timedelta(days=1)
@@ -208,13 +195,8 @@ class ViewV1:
         # Require JSON POST
         if not self.django_request.method == "POST":
             raise HttpResponseException(HttpResponseNotAllowed(["POST"]))
-        if not (
-            ("CONTENT_TYPE" in self.django_request.META)
-            and (self.django_request.META["CONTENT_TYPE"] == "application/json")
-        ):
-            raise HttpResponseException(
-                HttpResponseBadRequest("Bad Content-Type (expected application/json)")
-            )
+        if not (("CONTENT_TYPE" in self.django_request.META) and (self.django_request.META["CONTENT_TYPE"] == "application/json")):
+            raise HttpResponseException(HttpResponseBadRequest("Bad Content-Type (expected application/json)"))
 
         # Load the POSTed JSON
         try:
@@ -226,9 +208,7 @@ class ViewV1:
         """Authenticate a Storage login"""
 
         if "storage" not in self.req:
-            raise HttpResponseException(
-                HttpResponseBadRequest('Missing required option "storage"')
-            )
+            raise HttpResponseException(HttpResponseBadRequest('Missing required option "storage"'))
         for k in ("name", "secret"):
             if k not in self.req["storage"]:
                 raise HttpResponseException(HttpResponseForbidden("Bad auth"))
@@ -252,13 +232,9 @@ class ViewV1:
         """Get a Machine associated with a Storage request"""
 
         if "machine" not in self.req:
-            raise HttpResponseException(
-                HttpResponseBadRequest('Missing required option "machine"')
-            )
+            raise HttpResponseException(HttpResponseBadRequest('Missing required option "machine"'))
         if "uuid" not in self.req["machine"]:
-            raise HttpResponseException(
-                HttpResponseBadRequest('Missing required option "machine.uuid"')
-            )
+            raise HttpResponseException(HttpResponseBadRequest('Missing required option "machine.uuid"'))
 
         # Create or load the machine
         try:
@@ -275,22 +251,16 @@ class ViewV1:
         """Authenticate a Machine login"""
 
         if not (("machine" in self.req) and (isinstance(self.req["machine"], dict))):
-            raise HttpResponseException(
-                HttpResponseBadRequest('"machine" dict required')
-            )
+            raise HttpResponseException(HttpResponseBadRequest('"machine" dict required'))
 
         # Make sure these exist in the request (validation comes later)
         for k in ("uuid", "secret"):
             if k not in self.req["machine"]:
-                raise HttpResponseException(
-                    HttpResponseBadRequest('Missing required machine option "%s"' % k)
-                )
+                raise HttpResponseException(HttpResponseBadRequest('Missing required machine option "%s"' % k))
 
         # Load the machine
         try:
-            machine = Machine.objects.get(
-                uuid=uuid.UUID(self.req["machine"]["uuid"]), active=True
-            )
+            machine = Machine.objects.get(uuid=uuid.UUID(self.req["machine"]["uuid"]), active=True)
         except Machine.DoesNotExist:
             if is_update_config:
                 return
@@ -314,9 +284,7 @@ class ViewV1:
         if (not auth_req.get("name")) or (not auth_req.get("secret")):
             raise HttpResponseException(HttpResponseForbidden("Bad auth"))
         try:
-            a = Auth.objects.get(
-                name=auth_req["name"], secret_type=secret_type, active=True
-            )
+            a = Auth.objects.get(name=auth_req["name"], secret_type=secret_type, active=True)
         except Auth.DoesNotExist:
             raise HttpResponseException(HttpResponseForbidden("Bad auth"))
         if hashers.check_password(
@@ -364,9 +332,7 @@ class ViewV1:
                 machine.storage = random_weighted(weights)
                 modified.append("storage")
             except IndexError:
-                raise HttpResponseException(
-                    HttpResponseNotFound("No storages are currently available")
-                )
+                raise HttpResponseException(HttpResponseNotFound("No storages are currently available"))
 
         # If any of these exist in the request, add or update them in the
         # machine.
@@ -389,9 +355,7 @@ class ViewV1:
             try:
                 machine.full_clean()
             except ValidationError as e:
-                raise HttpResponseException(
-                    HttpResponseBadRequest("Validation error: %s" % str(e))
-                )
+                raise HttpResponseException(HttpResponseBadRequest("Validation error: %s" % str(e)))
         machine.date_checked_in = now
         modified.append("date_checked_in")
         if new_machine:
@@ -401,9 +365,7 @@ class ViewV1:
 
         req_sources = req_machine.get("sources", {})
         if not isinstance(req_sources, dict):
-            raise HttpResponseException(
-                HttpResponseBadRequest('Invalid type for "sources"')
-            )
+            raise HttpResponseException(HttpResponseBadRequest('Invalid type for "sources"'))
 
         sources_in_db = []
         for source in machine.source_set.all():
@@ -426,14 +388,10 @@ class ViewV1:
                 "snapshot_mode",
                 "preserve_hard_links",
             ):
-                if (k in req_sources[source.name]) and (
-                    getattr(source, k) != req_sources[source.name][k]
-                ):
+                if (k in req_sources[source.name]) and (getattr(source, k) != req_sources[source.name][k]):
                     setattr(source, k, req_sources[source.name][k])
                     if k == "frequency":
-                        source.date_next_backup = frequency_next_scheduled(
-                            req_sources[source.name][k], str(source.id)
-                        )
+                        source.date_next_backup = frequency_next_scheduled(req_sources[source.name][k], str(source.id))
                     modified.append(k)
             for k in ("filter", "exclude"):
                 if k not in req_sources[source.name]:
@@ -452,9 +410,7 @@ class ViewV1:
                 try:
                     source.full_clean()
                 except ValidationError as e:
-                    raise HttpResponseException(
-                        HttpResponseBadRequest("Validation error: %s" % str(e))
-                    )
+                    raise HttpResponseException(HttpResponseBadRequest("Validation error: %s" % str(e)))
                 source.save(update_fields=modified)
 
         for source_name in req_sources:
@@ -486,16 +442,12 @@ class ViewV1:
                 setattr(source, k, v)
 
             # New source, so schedule it regardless
-            source.date_next_backup = frequency_next_scheduled(
-                source.frequency, str(source.id)
-            )
+            source.date_next_backup = frequency_next_scheduled(source.frequency, str(source.id))
 
             try:
                 source.full_clean()
             except ValidationError as e:
-                raise HttpResponseException(
-                    HttpResponseBadRequest("Validation error: %s" % str(e))
-                )
+                raise HttpResponseException(HttpResponseBadRequest("Validation error: %s" % str(e)))
             source.save()
 
         return HttpResponse(json.dumps({}), content_type="application/json")
@@ -543,9 +495,7 @@ class ViewV1:
     def get_checkin_scheduled_sources(self, m):
         scheduled_sources = {}
         now = timezone.localtime()
-        for source in m.source_set.filter(
-            date_next_backup__lte=now, active=True, published=True
-        ):
+        for source in m.source_set.filter(date_next_backup__lte=now, active=True, published=True):
             scheduled_sources[source.name] = {
                 "path": source.path,
                 "retention": source.retention,
@@ -560,9 +510,7 @@ class ViewV1:
                 "storage": {
                     "name": source.machine.storage.name,
                     "ssh_ping_host": source.machine.storage.ssh_ping_host,
-                    "ssh_ping_host_keys": json.loads(
-                        source.machine.storage.ssh_ping_host_keys
-                    ),
+                    "ssh_ping_host_keys": json.loads(source.machine.storage.ssh_ping_host_keys),
                     "ssh_ping_port": source.machine.storage.ssh_ping_port,
                     "ssh_ping_user": source.machine.storage.ssh_ping_user,
                 },
@@ -598,9 +546,7 @@ class ViewV1:
                 "storage": {
                     "name": source.machine.storage.name,
                     "ssh_ping_host": source.machine.storage.ssh_ping_host,
-                    "ssh_ping_host_keys": json.loads(
-                        source.machine.storage.ssh_ping_host_keys
-                    ),
+                    "ssh_ping_host_keys": json.loads(source.machine.storage.ssh_ping_host_keys),
                     "ssh_ping_port": source.machine.storage.ssh_ping_port,
                     "ssh_ping_user": source.machine.storage.ssh_ping_user,
                 },
@@ -635,15 +581,11 @@ class ViewV1:
         machine = self.storage_get_machine(storage)
 
         if "sources" not in self.req["machine"]:
-            raise HttpResponseException(
-                HttpResponseBadRequest('Missing required option "machine.sources"')
-            )
+            raise HttpResponseException(HttpResponseBadRequest('Missing required option "machine.sources"'))
         for source_name in self.req["machine"]["sources"]:
             source_data = self.req["machine"]["sources"][source_name]
             try:
-                source = machine.source_set.get(
-                    name=source_name, active=True, published=True
-                )
+                source = machine.source_set.get(name=source_name, active=True, published=True)
             except Source.DoesNotExist:
                 raise HttpResponseException(HttpResponseNotFound("Source not found"))
             now = timezone.localtime()
@@ -651,9 +593,7 @@ class ViewV1:
             source.success = is_success
             if is_success:
                 source.date_last_backed_up = now
-                source.date_next_backup = frequency_next_scheduled(
-                    source.frequency, str(source.id), now
-                )
+                source.date_next_backup = frequency_next_scheduled(source.frequency, str(source.id), now)
             source.save(update_fields=["date_last_backed_up", "date_next_backup"])
             backup_log = BackupLog()
             backup_log.source = source
@@ -665,13 +605,9 @@ class ViewV1:
             if "summary" in source_data:
                 backup_log.summary = source_data["summary"]
             if "time_begin" in source_data:
-                backup_log.date_begin = timezone.make_aware(
-                    datetime.utcfromtimestamp(source_data["time_begin"])
-                )
+                backup_log.date_begin = timezone.make_aware(datetime.utcfromtimestamp(source_data["time_begin"]))
             if "time_end" in source_data:
-                backup_log.date_end = timezone.make_aware(
-                    datetime.utcfromtimestamp(source_data["time_end"])
-                )
+                backup_log.date_end = timezone.make_aware(datetime.utcfromtimestamp(source_data["time_end"]))
             backup_log.save()
         return HttpResponse(json.dumps({}), content_type="application/json")
 
@@ -730,9 +666,7 @@ class ViewV1:
             try:
                 storage.full_clean()
             except ValidationError as e:
-                raise HttpResponseException(
-                    HttpResponseBadRequest("Validation error: %s" % str(e))
-                )
+                raise HttpResponseException(HttpResponseBadRequest("Validation error: %s" % str(e)))
         storage.date_checked_in = now
         modified.append("date_checked_in")
         if new_storage:
@@ -741,9 +675,7 @@ class ViewV1:
             storage.save(update_fields=(modified + ["date_checked_in"]))
 
         machines = {}
-        for machine in Machine.objects.filter(
-            storage=storage, active=True, published=True
-        ):
+        for machine in Machine.objects.filter(storage=storage, active=True, published=True):
             machines[str(machine.uuid)] = {
                 "environment_name": machine.environment_name,
                 "service_name": machine.service_name,
@@ -751,9 +683,7 @@ class ViewV1:
                 "comment": machine.comment,
                 "ssh_public_key": machine.ssh_public_key,
             }
-        return HttpResponse(
-            json.dumps({"machines": machines}), content_type="application/json"
-        )
+        return HttpResponse(json.dumps({"machines": machines}), content_type="application/json")
 
     def health(self):
         # This is a general purpose test of the API server (its ability

@@ -57,21 +57,15 @@ class CustomModelAdmin(admin.ModelAdmin):
         related_links = []
         if "object_id" in context and hasattr(self.model._meta, "get_fields"):
             related_objs = [
-                f
-                for f in self.model._meta.get_fields()
-                if (f.one_to_many or f.one_to_one) and f.auto_created and not f.concrete
+                f for f in self.model._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created and not f.concrete
             ]
             for obj in related_objs:
-                count = obj.related_model.objects.filter(
-                    **{obj.field.name: context["object_id"]}
-                ).count()
+                count = obj.related_model.objects.filter(**{obj.field.name: context["object_id"]}).count()
                 if count > 0:
                     related_links.append((obj, obj.related_model._meta, count))
         context.update({"related_links": related_links})
 
-        return super(CustomModelAdmin, self).render_change_form(
-            request, context, *args, **kwargs
-        )
+        return super(CustomModelAdmin, self).render_change_form(request, context, *args, **kwargs)
 
 
 class MachineAdminForm(forms.ModelForm):

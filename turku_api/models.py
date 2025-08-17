@@ -79,12 +79,8 @@ class Auth(models.Model):
         ("machine_reg", "Machine registration"),
         ("storage_reg", "Storage registration"),
     )
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
-    )
-    name = models.CharField(
-        max_length=200, unique=True, help_text="Human-readable name of this auth."
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False)
+    name = models.CharField(max_length=200, unique=True, help_text="Human-readable name of this auth.")
     secret_hash = models.CharField(
         max_length=200,
         validators=[validate_hashed_password],
@@ -95,17 +91,13 @@ class Auth(models.Model):
         choices=SECRET_TYPES,
         help_text="Auth secret type (machine/storage).",
     )
-    comment = models.CharField(
-        max_length=200, blank=True, null=True, help_text="Human-readable comment."
-    )
+    comment = models.CharField(max_length=200, blank=True, null=True, help_text="Human-readable comment.")
     active = models.BooleanField(
         default=True,
         help_text="Whether this auth is enabled.  Disabling prevents new registrations using its key, and prevents "
         + "existing machines using its key from updating their configs.",
     )
-    date_added = models.DateTimeField(
-        default=timezone.localtime, help_text="Date/time this auth was added."
-    )
+    date_added = models.DateTimeField(default=timezone.localtime, help_text="Date/time this auth was added.")
 
     def __str__(self):
         return self.name
@@ -123,9 +115,7 @@ class Storage(models.Model):
 
     healthy.boolean = True
 
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False)
     name = models.CharField(
         max_length=200,
         unique=True,
@@ -136,9 +126,7 @@ class Storage(models.Model):
         validators=[validate_hashed_password],
         help_text="Hashed secret (password) of this storage unit.",
     )
-    comment = models.CharField(
-        max_length=200, blank=True, null=True, help_text="Human-readable comment."
-    )
+    comment = models.CharField(max_length=200, blank=True, null=True, help_text="Human-readable comment.")
     ssh_ping_host = models.CharField(
         max_length=200,
         verbose_name="SSH ping host",
@@ -181,9 +169,7 @@ class Storage(models.Model):
         + "being assigned to new machines. Existing machines which ping this storage unit will get errors "
         + "because this storage unit can no longer query the API server.",
     )
-    published = models.BooleanField(
-        default=True, help_text="Whether this storage unit has been enabled by itself."
-    )
+    published = models.BooleanField(default=True, help_text="Whether this storage unit has been enabled by itself.")
     date_registered = models.DateTimeField(
         default=timezone.localtime,
         help_text="Date/time this storage unit was registered.",
@@ -192,9 +178,7 @@ class Storage(models.Model):
         default=timezone.localtime,
         help_text="Date/time this storage unit presented a modified config.",
     )
-    date_checked_in = models.DateTimeField(
-        blank=True, null=True, help_text="Date/time this storage unit last checked in."
-    )
+    date_checked_in = models.DateTimeField(blank=True, null=True, help_text="Date/time this storage unit last checked in.")
 
     def __str__(self):
         return self.name
@@ -212,9 +196,7 @@ class Machine(models.Model):
 
     healthy.boolean = True
 
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False)
 
     uuid = models.UUIDField(
         unique=True,
@@ -245,9 +227,7 @@ class Machine(models.Model):
         help_text='Unit name of this machine.  For Juju units, this is the full unit name (e.g. "service-name/0").  '
         + "Otherwise, this should be the machine's hostname.",
     )
-    comment = models.CharField(
-        max_length=200, blank=True, null=True, help_text="Human-readable comment."
-    )
+    comment = models.CharField(max_length=200, blank=True, null=True, help_text="Human-readable comment.")
     ssh_public_key = models.CharField(
         max_length=2048,
         verbose_name="SSH public key",
@@ -273,16 +253,12 @@ class Machine(models.Model):
         default=True,
         help_text="Whether this machine has been enabled by the machine agent.",
     )
-    date_registered = models.DateTimeField(
-        default=timezone.localtime, help_text="Date/time this machine was registered."
-    )
+    date_registered = models.DateTimeField(default=timezone.localtime, help_text="Date/time this machine was registered.")
     date_updated = models.DateTimeField(
         default=timezone.localtime,
         help_text="Date/time this machine presented a modified config.",
     )
-    date_checked_in = models.DateTimeField(
-        blank=True, null=True, help_text="Date/time this machine last checked in."
-    )
+    date_checked_in = models.DateTimeField(blank=True, null=True, help_text="Date/time this machine last checked in.")
 
     def __str__(self):
         return "%s (%s)" % (self.unit_name, str(self.uuid)[0:8])
@@ -304,21 +280,11 @@ class Source(models.Model):
         ("none", "No snapshotting"),
         ("link-dest", "Hardlink trees (rsync --link-dest)"),
     )
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
-    )
-    name = models.CharField(
-        max_length=200, help_text="Computer-readable source name identifier."
-    )
-    machine = models.ForeignKey(
-        Machine, on_delete=models.CASCADE, help_text="Machine this source belongs to."
-    )
-    comment = models.CharField(
-        max_length=200, blank=True, null=True, help_text="Human-readable comment."
-    )
-    path = models.CharField(
-        max_length=200, help_text="Full filesystem path of this source."
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False)
+    name = models.CharField(max_length=200, help_text="Computer-readable source name identifier.")
+    machine = models.ForeignKey(Machine, on_delete=models.CASCADE, help_text="Machine this source belongs to.")
+    comment = models.CharField(max_length=200, blank=True, null=True, help_text="Human-readable comment.")
+    path = models.CharField(max_length=200, help_text="Full filesystem path of this source.")
     filter = models.CharField(
         max_length=2048,
         default="[]",
@@ -331,9 +297,7 @@ class Source(models.Model):
         validators=[validate_json_string_list],
         help_text="JSON list of rsync-compatible --exclude options.",
     )
-    frequency = models.CharField(
-        max_length=200, default="daily", help_text="How often to back up this source."
-    )
+    frequency = models.CharField(max_length=200, default="daily", help_text="How often to back up this source.")
     retention = models.CharField(
         max_length=200,
         default="last 5 days, earliest of month",
@@ -376,9 +340,7 @@ class Source(models.Model):
         help_text="Whether this source is enabled.  Disabling means the API server no longer gives it to the "
         + "storage unit, even if it's time for a backup.",
     )
-    success = models.BooleanField(
-        default=True, help_text="Whether this source's last backup was successful."
-    )
+    success = models.BooleanField(default=True, help_text="Whether this source's last backup was successful.")
     published = models.BooleanField(
         default=True,
         help_text="Whether this source is actively being published by the machine agent.",
@@ -410,12 +372,8 @@ class Source(models.Model):
 
 
 class BackupLog(models.Model):
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
-    )
-    source = models.ForeignKey(
-        Source, on_delete=models.CASCADE, help_text="Source this log entry belongs to."
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False)
+    source = models.ForeignKey(Source, on_delete=models.CASCADE, help_text="Source this log entry belongs to.")
     date = models.DateTimeField(
         default=timezone.localtime,
         help_text="Date/time this log entry was received/processed.",
@@ -427,47 +385,27 @@ class BackupLog(models.Model):
         on_delete=models.CASCADE,
         help_text="Storage unit this backup occurred on.",
     )
-    success = models.BooleanField(
-        default=False, help_text="Whether this backup succeeded."
-    )
-    date_begin = models.DateTimeField(
-        blank=True, null=True, help_text="Date/time this backup began."
-    )
-    date_end = models.DateTimeField(
-        blank=True, null=True, help_text="Date/time this backup ended."
-    )
-    snapshot = models.CharField(
-        max_length=200, blank=True, null=True, help_text="Name of the created snapshot."
-    )
-    summary = models.TextField(
-        blank=True, null=True, help_text="Summary of the backup's events."
-    )
+    success = models.BooleanField(default=False, help_text="Whether this backup succeeded.")
+    date_begin = models.DateTimeField(blank=True, null=True, help_text="Date/time this backup began.")
+    date_end = models.DateTimeField(blank=True, null=True, help_text="Date/time this backup ended.")
+    snapshot = models.CharField(max_length=200, blank=True, null=True, help_text="Name of the created snapshot.")
+    summary = models.TextField(blank=True, null=True, help_text="Summary of the backup's events.")
 
     def __str__(self):
         return "%s %s" % (str(self.source), self.date.strftime("%Y-%m-%d %H:%M:%S"))
 
 
 class FilterSet(models.Model):
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False
-    )
-    name = models.CharField(
-        max_length=200, unique=True, help_text="Name of this filter set."
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, blank=False, null=False)
+    name = models.CharField(max_length=200, unique=True, help_text="Name of this filter set.")
     filters = models.TextField(
         default="[]",
         validators=[validate_json_string_list],
         help_text="JSON list of this filter set's filter rules.",
     )
-    comment = models.CharField(
-        max_length=200, blank=True, null=True, help_text="Human-readable comment."
-    )
-    active = models.BooleanField(
-        default=True, help_text="Whether this filter set is enabled."
-    )
-    date_added = models.DateTimeField(
-        default=timezone.localtime, help_text="Date/time this filter set was added."
-    )
+    comment = models.CharField(max_length=200, blank=True, null=True, help_text="Human-readable comment.")
+    active = models.BooleanField(default=True, help_text="Whether this filter set is enabled.")
+    date_added = models.DateTimeField(default=timezone.localtime, help_text="Date/time this filter set was added.")
 
     def __str__(self):
         return self.name

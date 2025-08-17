@@ -58,9 +58,7 @@ DATABASES = {
         "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
     }
 }
-SECRET_KEY = "".join(
-    random.choice(string.ascii_letters + string.digits) for i in range(30)
-)
+SECRET_KEY = "".join(random.choice(string.ascii_letters + string.digits) for i in range(30))
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",

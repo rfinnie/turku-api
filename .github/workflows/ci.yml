@@ -1,41 +1,28 @@
-name: ci
-on: [push, pull_request]
+# SPDX-PackageSummary: Turku backups - API server
+# SPDX-FileCopyrightText: Copyright (C) 2015-2020 Canonical Ltd.
+# SPDX-FileCopyrightText: Copyright (C) 2015-2025 Ryan Finnie <ryan@finnie.org>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+---
+name: "ci"
+"on": ["push", "pull_request"]
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
         os:
-        - macos-latest
-        - ubuntu-latest
-        - windows-latest
+          - "ubuntu-latest"
         python-version:
-        - "3.8"
-        - "3.10"
+          - "3.12"
     steps:
-    - uses: actions/checkout@v3
-    - name: Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Python dependencies
-      run: |
-        python -mpip install tox
-    - name: tox
-      run: |
-        python -mtox
-    - name: Upload sdist zip
-      uses: actions/upload-artifact@v3
-      with:
-        name: sdist-${{ github.job }}-${{ github.run_id }}.${{ github.run_number }}-${{ runner.os }}-py${{ matrix.python-version }}
-        path: .tox/dist/*.zip
-  docker:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Docker build
-      run: docker image build -t turku-api:latest .
-    - name: Container check
-      run: |
-        docker run --rm turku-api:latest django-admin check
-        docker run --rm turku-api:latest django-admin test
+      - uses: "actions/checkout@v4"
+      - name: "Python ${{ matrix.python-version }}"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "${{ matrix.python-version }}"
+      - name: "Python dependencies"
+        run: |
+          python -mpip install tox
+      - name: "tox"
+        run: |
+          python -mtox

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-# SPDX-PackageSummary: Turku backups - API server
-# SPDX-FileCopyrightText: Copyright (C) 2015-2020 Canonical Ltd.
-# SPDX-FileCopyrightText: Copyright (C) 2015-2021 Ryan Finnie <ryan@finnie.org>
+# SPDX-PackageName: turku-api
+# SPDX-PackageSupplier: Ryan Finnie <ryan@finnie.org>
+# SPDX-PackageDownloadLocation: https://github.com/rfinnie/turku-api
+# SPDX-FileCopyrightText: © 2015 Canonical Ltd.
+# SPDX-FileCopyrightText: © 2015 Ryan Finnie <ryan@finnie.org>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from django.contrib.auth import hashers

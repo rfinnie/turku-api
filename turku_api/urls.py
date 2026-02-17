@@ -20,7 +20,6 @@ except ImportError:
 
 from turku_api import views
 
-
 admin.autodiscover()
 
 urlpatterns = [

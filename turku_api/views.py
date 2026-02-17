@@ -460,7 +460,7 @@ class ViewV1:
         out = []
         for f in set:
             try:
-                (verb, subsetname) = f.split(" ", 1)
+                verb, subsetname = f.split(" ", 1)
             except ValueError:
                 continue
             if verb in ("merge", "."):

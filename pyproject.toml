@@ -12,7 +12,7 @@ authors = [
 description = "Turku backups - API application"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "AGPL-3.0-or-later"}
+license = "AGPL-3.0-or-later"
 dependencies = [
     "Django",
     "django[argon2]",

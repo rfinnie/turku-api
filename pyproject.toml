@@ -24,6 +24,10 @@ dynamic = ["version"]
 [project.optional-dependencies]
 gunicorn = ["gunicorn"]
 
+[build-system]
+requires = ["setuptools>=59.6.0"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools.packages.find]
 include = [
     "turku_api",

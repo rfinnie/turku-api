@@ -12,6 +12,7 @@ steps:
   - name: "Docker build"
     image: "docker:cli"
     commands: |
+      set -x
       IMAGE_NAME="$(echo "$${CI_REPO}" | tr '[:upper:]' '[:lower:]')"
       IMAGE_TAG="$${CI_WORKFLOW_NAME}-$(echo "$${CI_SYSTEM_PLATFORM}" | sed 's,/,-,g')"
       IMAGE_ID="build/$${IMAGE_NAME}:$${IMAGE_TAG}"

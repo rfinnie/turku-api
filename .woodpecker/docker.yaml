@@ -8,9 +8,12 @@ when:
   - event: ["push", "pull_request", "manual"]
 labels:
   platform: "linux/amd64"
+clone:
+  git:
+    image: "docker.io/woodpeckerci/plugin-git:latest@sha256:ebde4a4d07e0e24b630082484d192890dd4f6d442d90bf5466f0763860f83652"  # 2026-05-28
 steps:
   - name: "Docker build"
-    image: "docker:cli"
+    image: "docker.io/library/docker:cli@sha256:873de13208aab9c1de73fe984fd45883e01464fcfcc85efa20aa56a9ccfe7aa6"  # 2026-06-04
     commands: |
       set -x
       IMAGE_NAME="$(echo "$${CI_REPO}" | tr '[:upper:]' '[:lower:]')"
@@ -23,7 +26,7 @@ steps:
   - name: "Notify Mastodon if failure"
     when:
       - status: ["failure"]
-    image: "woodpeckerci/plugin-mastodon-post"
+    image: "docker.io/woodpeckerci/plugin-mastodon-post:latest@sha256:456597681cff794b6ddb7b085ce95c42a18301e512503898c4abdaa1080e7e4c"  # 2026-04-19
     settings:
       server_url: "https://m29.us"
       access_token:
